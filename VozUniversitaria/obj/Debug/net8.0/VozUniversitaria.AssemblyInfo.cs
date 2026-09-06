@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("VozUniversitaria")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+1e459faf7f4107fd7bde78c7642d3a5144b5b08b")]
 [assembly: System.Reflection.AssemblyProductAttribute("VozUniversitaria")]
 [assembly: System.Reflection.AssemblyTitleAttribute("VozUniversitaria")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

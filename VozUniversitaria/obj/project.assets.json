@@ -13,11 +13,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "/workspaces/myCONTAINERS/VozUniversitaria/VozUniversitaria.csproj",
+      "projectUniqueName": "/workspaces/VozUniversitaria-master/VozUniversitaria/VozUniversitaria.csproj",
       "projectName": "VozUniversitaria",
-      "projectPath": "/workspaces/myCONTAINERS/VozUniversitaria/VozUniversitaria.csproj",
+      "projectPath": "/workspaces/VozUniversitaria-master/VozUniversitaria/VozUniversitaria.csproj",
       "packagesPath": "/home/vscode/.nuget/packages/",
-      "outputPath": "/workspaces/myCONTAINERS/VozUniversitaria/obj/",
+      "outputPath": "/workspaces/VozUniversitaria-master/VozUniversitaria/obj/",
       "projectStyle": "PackageReference",
       "configFilePaths": [
         "/home/vscode/.nuget/NuGet/NuGet.Config"
