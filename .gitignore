@@ -1,0 +1,6 @@
+bin/
+obj/
+*.dll
+*.pdb
+node_modules/
+.env
