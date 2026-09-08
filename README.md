@@ -124,6 +124,25 @@ The project includes the default ASP.NET Core configuration files:
 - `appsettings.Development.json` — development-specific settings
 - `Properties/launchSettings.json` — local launch profiles
 
+## Database Connection (SQL Server)
+
+This project includes a SQL Server 2019 container defined in `.devcontainer/docker-compose.yml`, which starts automatically when the project is opened in a Dev Container.
+
+To connect from VS Code (using the **SQL Server (mssql)** extension):
+
+1. Open the SQL Server panel in the sidebar (database icon).
+2. Create a new connection with the following details:
+   - **Server name:** `localhost`
+   - **Port:** `1433`
+   - **Trust server certificate:** enabled (the container uses a self-signed certificate)
+   - **Authentication type:** SQL Login
+   - **User name:** `sa`
+   - **Password:** `P@ssw0rd` (defined in `SA_PASSWORD` inside `docker-compose.yml`)
+   - **Database name:** `master` (the project doesn't have its own database yet)
+3. Click "Connect".
+
+<!-- Note: these credentials are for the local development (dev container) environment only, and are already visible in `docker-compose.yml`. They pose no security risk for production. -->
+
 ## Development Notes
 
 The current implementation is intentionally lightweight and follows the standard ASP.NET Core template. It does not yet include:
@@ -167,3 +186,5 @@ This project does not currently specify a license file. If you plan to share or 
 ## Maintainers
 
 This project is currently in an early development stage and is best suited for continued extension by the project owner or development team.
+
+
