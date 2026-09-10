@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/workspaces/myCONTAINERS/VozUniversitaria/VozUniversitaria.csproj": {}
+    "/workspaces/VozUniversitaria/VozUniversitaria/VozUniversitaria.csproj": {}
   },
   "projects": {
-    "/workspaces/myCONTAINERS/VozUniversitaria/VozUniversitaria.csproj": {
+    "/workspaces/VozUniversitaria/VozUniversitaria/VozUniversitaria.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/workspaces/myCONTAINERS/VozUniversitaria/VozUniversitaria.csproj",
+        "projectUniqueName": "/workspaces/VozUniversitaria/VozUniversitaria/VozUniversitaria.csproj",
         "projectName": "VozUniversitaria",
-        "projectPath": "/workspaces/myCONTAINERS/VozUniversitaria/VozUniversitaria.csproj",
+        "projectPath": "/workspaces/VozUniversitaria/VozUniversitaria/VozUniversitaria.csproj",
         "packagesPath": "/home/vscode/.nuget/packages/",
-        "outputPath": "/workspaces/myCONTAINERS/VozUniversitaria/obj/",
+        "outputPath": "/workspaces/VozUniversitaria/VozUniversitaria/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/vscode/.nuget/NuGet/NuGet.Config"
@@ -42,6 +42,28 @@
       "frameworks": {
         "net8.0": {
           "targetAlias": "net8.0",
+          "dependencies": {
+            "BCrypt.Net-Next": {
+              "target": "Package",
+              "version": "[4.2.0, )"
+            },
+            "Microsoft.EntityFrameworkCore.Design": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.26, )"
+            },
+            "Microsoft.EntityFrameworkCore.SqlServer": {
+              "target": "Package",
+              "version": "[8.0.26, )"
+            },
+            "Microsoft.EntityFrameworkCore.Tools": {
+              "include": "Runtime, Build, Native, ContentFiles, Analyzers, BuildTransitive",
+              "suppressParent": "All",
+              "target": "Package",
+              "version": "[8.0.26, )"
+            }
+          },
           "imports": [
             "net461",
             "net462",
