@@ -8,12 +8,12 @@
 
 ## 1. Project Overview
 
-**VozUniversitaria** es una plataforma web desarrollada en ASP.NET Core MVC diseñada para centralizar, gestionar y difundir noticias, eventos y artículos de interés para la comunidad universitaria.
+**VozUniversitaria** is a web application developed in ASP.NET Core MVC designed to centralize, manage, and distribute news, events, and articles of interest to the university community.
 
 ### Core Objectives
-* Proporcionar un portal intuitivo para que los estudiantes y docentes publiquen y consulten artículos.
-* Implementar control de acceso basado en roles (Administrador, Redactor, Usuario).
-* Estandarizar el entorno de desarrollo mediante Dev Containers para evitar discrepancias de configuración.
+* Provide an intuitive portal for students and faculty to publish and consult articles.
+* Implement role-based access control (Admin, Editor, User).
+* Standardize the development environment using Dev Containers to prevent configuration discrepancies.
 
 ---
 
@@ -44,16 +44,16 @@
 ## 4. System Architecture & Features
 
 ### Key Modules
-1. **User Authentication:** Registro, inicio de sesión y manejo de sesiones.
-2. **Content Management System (CMS):** Crear, editar, publicar y eliminar artículos/noticias (CRUD).
-3. **Category & Tagging System:** Clasificación de contenido por facultades o temas de interés.
-4. **Data Persistence:** Mapeo relacional con Entity Framework Core hacia SQL Server.
+1. **User Authentication:** Registration, login, and session management.
+2. **Content Management System (CMS):** Create, read, update, and delete articles/news (CRUD).
+3. **Category & Tagging System:** Content classification by faculties or topics of interest.
+4. **Data Persistence:** Relational mapping with Entity Framework Core to SQL Server.
 
 ---
 
 ## 5. Dev Container Specification
 
-El entorno de desarrollo estandarizado del proyecto utiliza **Dev Containers** para garantizar idempotencia entre los desarrolladores:
+The standardized development environment for this project uses **Dev Containers** to ensure idempotency across all developers:
 
 | Feature | Configuration |
 | :--- | :--- |
