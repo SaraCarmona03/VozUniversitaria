@@ -1,15 +1,9 @@
-<<<<<<< HEAD
-bin/
-obj/
-*.dll
-*.pdb
-node_modules/
-.env
-=======
-
 bin/
 obj/
 **/bin/
 **/obj/
+*.dll
+*.pdb
+node_modules/
+.env
 dotnet/
->>>>>>> 4896a672baa7c75f0abecf582f498ce6c576f33b
