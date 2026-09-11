@@ -7,7 +7,13 @@
 	"workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 
 	// Features to add to the dev container. More info: https://containers.dev/features.
+<<<<<<< HEAD
 	// "features": {},
+=======
+	//"features": {
+	//	"ghcr.io/devcontainers-extra/features/git": 
+	// },
+>>>>>>> 7fbdbca6676f3b14a793f8e28dbfe70cfc8f477e
 
 	// Configure tool-specific properties.
 	"customizations": {
