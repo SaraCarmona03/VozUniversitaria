@@ -1,0 +1,24 @@
+@page "/about"
+@inject NavigationManager Navigation
+
+<PageTitle>About</PageTitle>
+
+<main class="min-h-screen bg-slate-100 p-8">
+    <div class="mx-auto max-w-xl rounded-xl bg-white p-6 shadow-md">
+        <h1 class="mb-4 text-3xl font-bold text-gray-900">About</h1>
+        <p class="mb-6 text-gray-700">Esta es una segunda página de prueba para ver la navegación.</p>
+
+        <button
+            class="rounded-lg bg-slate-900 px-4 py-2 text-sm font-medium text-white hover:bg-slate-700"
+            @onclick="GoHome">
+            Home
+        </button>
+    </div>
+</main>
+
+@code {
+    private void GoHome()
+    {
+        Navigation.NavigateTo("/");
+    }
+}
