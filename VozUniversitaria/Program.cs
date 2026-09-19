@@ -19,6 +19,12 @@ builder.Services.AddAuthentication("Cookies")
         options.AccessDeniedPath = "/Account/Login";
     });   
 
+builder.Services.AddAuthorization(options =>
+{
+    options.AddPolicy("AdminOnly", policy => policy.RequireRole("Admin"));
+    options.AddPolicy("TeachingStaff", policy => policy.RequireRole("Admin", "Teacher"));
+});
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.

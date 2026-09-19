@@ -1,9 +1,11 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VozUniversitaria.Models;
 
 namespace VozUniversitaria.Controllers;
 
+[Authorize]
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
@@ -15,11 +17,6 @@ public class HomeController : Controller
 
     public IActionResult Index()
     {
-        if (User.Identity?.IsAuthenticated != true)
-    {
-        return RedirectToAction("Login", "Account");
-    }
-    
         return View();
     }
 

@@ -32,36 +32,73 @@ namespace VozUniversitaria.Migrations
 
                     b.Property<string>("CaseNumber")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Email")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
                     b.Property<string>("LastName")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)");
+                        .HasMaxLength(255)
+                        .HasColumnType("nvarchar(255)");
 
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CaseNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Email")
+                        .IsUnique();
+
                     b.ToTable("Users");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            CaseNumber = "ADMIN-001",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Email = "admin@vozuniversitaria.local",
+                            IsActive = true,
+                            LastName = "Administrator",
+                            Name = "System",
+                            PasswordHash = "$2a$11$Kk5s/ejkGhy580CL6qhP2.BeGa7p.YDQkpxSHJV9/BzI4Ys4JzMj.",
+                            Role = 2
+                        },
+                        new
+                        {
+                            Id = 2,
+                            CaseNumber = "TEACHER-001",
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            Email = "teacher@vozuniversitaria.local",
+                            IsActive = true,
+                            LastName = "Teacher",
+                            Name = "Test",
+                            PasswordHash = "$2a$11$Kk5s/ejkGhy580CL6qhP2.BeGa7p.YDQkpxSHJV9/BzI4Ys4JzMj.",
+                            Role = 1
+                        });
                 });
 #pragma warning restore 612, 618
         }

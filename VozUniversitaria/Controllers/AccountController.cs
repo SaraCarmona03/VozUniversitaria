@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
@@ -19,6 +20,7 @@ namespace VozUniversitaria.Controllers
         }
 
         // GET: /Account/Register
+            [AllowAnonymous]
         [HttpGet]
         public IActionResult Register()
         {
@@ -26,6 +28,7 @@ namespace VozUniversitaria.Controllers
         }
 
         // POST: /Account/Register
+            [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
@@ -59,6 +62,7 @@ namespace VozUniversitaria.Controllers
         }
 
         // GET: /Account/Login
+            [AllowAnonymous]
         [HttpGet]
         public IActionResult Login()
         {
@@ -66,6 +70,7 @@ namespace VozUniversitaria.Controllers
         }
 
         // POST: /Account/Login
+            [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
@@ -76,7 +81,7 @@ namespace VozUniversitaria.Controllers
 
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
+            if (user == null || !user.IsActive || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
             {
                 ModelState.AddModelError(string.Empty, "Invalid email or password.");
                 return View(model);
@@ -97,6 +102,7 @@ namespace VozUniversitaria.Controllers
         }
 
         // POST: /Account/Logout
+            [Authorize]
         [HttpPost]
         public async Task<IActionResult> Logout()
         {
