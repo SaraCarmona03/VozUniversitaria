@@ -1,33 +1,23 @@
+using Microsoft.AspNetCore.Identity;
 using System.ComponentModel.DataAnnotations;
 
-public class Users
+public class Users : IdentityUser
 {
-    [Key]
-    public int Id { get; set; } // Unique identifier
+    [Required]
+    [StringLength(100)]
+    public string Name { get; set; } = string.Empty;
 
     [Required]
     [StringLength(100)]
-    public required string Name { get; set; } // First name
-
-    [Required]
-    [StringLength(100)]
-    public required string LastName { get; set; } // Last name
+    public string LastName { get; set; } = string.Empty;
 
     [Required]
     [StringLength(50)]
-    public required string CaseNumber { get; set; } // Student ID or enrollment number
+    public string CaseNumber { get; set; } = string.Empty;
 
-    [Required]
-    [EmailAddress]
-    [StringLength(255)]
-    public required string Email { get; set; } // User email
-
-    [Required]
-    [StringLength(255)]
-    public required string PasswordHash { get; set; } // Encrypted password
-    public UserRole Role { get; set; } // User permissions role
-    public bool IsActive { get; set; } = true; // Account status (active/suspended)
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow; // Account creation date
+    public UserRole Role { get; set; }
+    public bool IsActive { get; set; } = true;
+    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 public enum UserRole

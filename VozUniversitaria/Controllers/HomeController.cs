@@ -5,7 +5,7 @@ using VozUniversitaria.Models;
 
 namespace VozUniversitaria.Controllers;
 
-[Authorize]
+[Authorize(Roles = "Student,Teacher,Admin,Staff")]
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
