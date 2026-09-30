@@ -189,7 +189,7 @@ namespace VozUniversitaria.Controllers
         [HttpGet]
         public IActionResult Login()
         {
-            return View();
+            return View("Login");
         }
 
         [AllowAnonymous]
