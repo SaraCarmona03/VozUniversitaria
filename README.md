@@ -101,6 +101,7 @@ flowchart LR
 ### Prerequisites
 
 - .NET 8 SDK
+- SQL Server available at `localhost:1433` with credentials matching the connection string in `VozUniversitaria/appsettings.json`
 - A code editor such as Visual Studio Code
 - Git
 
@@ -113,19 +114,26 @@ git clone <repository-url>
 cd VozUniversitaria
 ```
 
-2. Restore packages:
+2. Restore the repository's local .NET tools and NuGet packages:
 
 ```bash
+dotnet tool restore
 dotnet restore
 ```
 
-3. Build the application:
+3. Create or update the local database by applying the EF Core migrations:
+
+```bash
+dotnet ef database update --project VozUniversitaria/VozUniversitaria.csproj
+```
+
+4. Build the application:
 
 ```bash
 dotnet build
 ```
 
-4. Run the application:
+5. Run the application:
 
 ```bash
 dotnet run --project VozUniversitaria/VozUniversitaria.csproj
@@ -166,9 +174,10 @@ data for an administrator and a teacher. Passwords are stored as BCrypt hashes.
 
 ### Apply migrations
 
-From the repository root, run:
+From the repository root, restore the local EF Core tool once, then apply migrations:
 
 ```bash
+dotnet tool restore
 dotnet ef database update --project VozUniversitaria/VozUniversitaria.csproj
 ```
 
@@ -183,6 +192,7 @@ The project currently includes the following migrations:
 1. `20260908045623_InitialCreate`
 2. `20260918021207_AddUserConstraintsAndSeeding`
 3. `20260918023553_FixSeedUserPasswordHash`
+4. `20260922013733_AddIdentitySupport`
 
 ### Local SQL Server connection
 
