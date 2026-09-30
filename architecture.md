@@ -1,19 +1,20 @@
-# Architecture and Data Model - VozUniversitaria
+
 
 ## 1. Overview
 
-VozUniversitaria is a web application built with ASP.NET Core MVC on .NET 8, focused on a university communication and academic management portal. The current solution is structured in MVC layers and already defines an initial user model in `VozUniversitaria/Models/Users.cs` and an EF Core context in `VozUniversitaria/Data/AppDbContext.cs`.
-
-The proposed architecture should follow a clear separation between:
-
-- Presentation: controllers, Razor views, Bootstrap, JavaScript
-- Domain: entities and business rules
-- Persistence: DbContext, Entity Framework Core, migrations
-- Security: authentication, authorization, and session management
+See `PROPOSAL.md` §1 for the full project overview. Per `README.md`, the implementation
+currently includes: the ASP.NET Core MVC skeleton, user registration and cookie-based login
+(`AccountController`), role-based authorization (`Student`/`Teacher`/`Admin`/`Staff` claims
+and policies), and SQL Server persistence via EF Core (`AppDbContext`, 3 migrations, seed
+data). Content-domain features — courses, enrollments, announcements, messaging, CMS CRUD —
+are not yet implemented; see §4.2 "Planned evolution."
 
 ---
 
 ## 2. Proposed architecture
+
+The diagram below is the target internal structure (adds the ViewModel/Service split on top
+of `README.md`'s higher-level diagram):
 
 ```mermaid
 flowchart LR
@@ -30,48 +31,62 @@ flowchart LR
 
 ### 2.1 Presentation layer
 
-Responsible for:
+**Currently implemented** (per `README.md` → Project Structure):
 
-- handling HTTP requests
-- validating form inputs
-- returning Razor views
-- exposing endpoints for authentication and navigation
-
-Examples in the current project:
-
-- `Controllers/AccountController.cs`
 - `Controllers/HomeController.cs`
-- `Views/Account/*.cshtml`
-- `Views/Home/*.cshtml`
+- `Controllers/AccountController.cs`
+- `ViewModels/LoginViewModel.cs`, `ViewModels/RegisterViewModel.cs` (input validation with
+  DataAnnotations)
+- `Views/Home/*.cshtml`, `Views/Shared/*.cshtml`
+
+> `README.md`'s Project Structure tree doesn't list a `Views/Account/` folder, even
+> though registration/login are described as implemented. Confirm the actual view path
+> before referencing it elsewhere.
+
+**Planned, not yet implemented:**
+
+- Controllers for courses, announcements, internal messaging, admin dashboard, CMS CRUD
 
 ### 2.2 Domain layer
 
-Responsible for:
+**Currently implemented:** the `Users` entity (§4.1) with a `UserRole` enum (`Student`,
+`Teacher`, `Admin`, `Staff`), unique `Email` and `CaseNumber` constraints, and BCrypt
+password hashing.
 
-- defining business entities and relationships
-- encapsulating important business rules
-- maintaining consistency between users, students, teachers, and administration
+**Planned:** `Student`, `Teacher`, `Course`, `Enrollment`, `Announcement`, `Message`
+entities (§4.2).
 
 ### 2.3 Persistence layer
 
-Responsible for:
-
-- mapping entities to SQL tables
-- managing migrations
-- executing queries and relationships with EF Core
-
-Current state:
-
-- `AppDbContext` exposes `DbSet<Users>`
-- the base is ready to grow with more entities and relationships
+**Currently implemented:** `AppDbContext` and `AppDbContextFactory` (`Data/`), 3 EF Core
+migrations (`InitialCreate`, `AddUserConstraintsAndSeeding`, `FixSeedUserPasswordHash`),
+SQL Server connection via `ConnectionStrings:DefaultConnection` → `VozUniversitariaDb`.
+Full migration commands are documented in `README.md` → "Database and Entity Framework
+Core" — not repeated here.
 
 ---
 
-## 3. Current data model
+## 3. Project evolution recommendation
 
-The current base includes a central entity called `Users`, which represents a general system user.
+1. Register and authenticate users — done
+2. Separate `Student` and `Teacher` profiles
+3. Create courses and subjects
+4. Implement enrollments and grades
+5. Add announcements and internal messages
+6. Expose APIs or services for a modern frontend
+7. Add advanced roles and permissions
 
-### 3.1 `Users` entity
+> For the phase/status-level roadmap, see `PROPOSAL.md` §5.
+
+---
+
+## 4. Data model
+
+### 4.1 Current implemented entity: `Users`
+
+> Verify the fields below against the current `Models/Users.cs` and the applied
+> migrations — this reflects the previously documented shape plus `README.md`'s confirmed
+> constraints (unique `Email`/`CaseNumber`, BCrypt hash, `Role`).
 
 ```csharp
 public class Users
@@ -96,34 +111,28 @@ public enum UserRole
 }
 ```
 
-### 3.2 Property descriptions
+```mermaid
+erDiagram
+    USERS {
+        int Id PK
+        string Name
+        string LastName
+        string CaseNumber UK
+        string Email UK
+        string PasswordHash
+        int Role
+        boolean IsActive
+        datetime CreatedAt
+    }
+```
 
-- `Id`: unique user identifier
-- `Name`: first name
-- `LastName`: last name
-- `CaseNumber`: enrollment number or institutional document number
-- `Email`: institutional or personal email
-- `PasswordHash`: encrypted password using secure hashing
-- `Role`: user role within the system
-- `IsActive`: user status (active/inactive)
-- `CreatedAt`: record creation date
+Applied via migration `InitialCreate` (plus `AddUserConstraintsAndSeeding` for the unique
+indexes and seed data, and `FixSeedUserPasswordHash`).
 
-### 3.3 Current roles
+### 4.2 Planned evolution
 
-| Role | Description |
-| --- | --- |
-| Student | University student |
-| Teacher | Teacher or professor |
-| Admin | System administrator |
-| Staff | Administrative staff |
-
----
-
-## 4. Recommended data model for the university
-
-The project needs to grow from a base user model toward a more complete academic model. The following structure is a healthy proposal for a university portal.
-
-### 4.1 Main entities
+Each entity below must be added to the C# model and `AppDbContext`, followed by a new EF
+Core migration containing its foreign keys and indexes.
 
 ```mermaid
 erDiagram
@@ -141,25 +150,6 @@ erDiagram
     TEACHER ||--o{ GRADE : evaluates
 ```
 
-### 4.2 `User` entity
-
-```csharp
-public class User
-{
-    public int Id { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string LastName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
-    public string PasswordHash { get; set; } = string.Empty;
-    public UserRole Role { get; set; }
-    public bool IsActive { get; set; } = true;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public DateTime? UpdatedAt { get; set; }
-}
-```
-
-### 4.3 `Student` entity
-
 ```csharp
 public class Student
 {
@@ -171,14 +161,10 @@ public class Student
     public bool IsGraduated { get; set; }
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public User? User { get; set; }
+    public Users? User { get; set; }
     public ICollection<Enrollment>? Enrollments { get; set; }
 }
-```
 
-### 4.4 `Teacher` entity
-
-```csharp
 public class Teacher
 {
     public int Id { get; set; }
@@ -188,14 +174,10 @@ public class Teacher
     public string Title { get; set; } = string.Empty;
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-    public User? User { get; set; }
+    public Users? User { get; set; }
     public ICollection<Course>? Courses { get; set; }
 }
-```
 
-### 4.5 `Course` entity
-
-```csharp
 public class Course
 {
     public int Id { get; set; }
@@ -211,11 +193,7 @@ public class Course
     public ICollection<Enrollment>? Enrollments { get; set; }
     public ICollection<Assignment>? Assignments { get; set; }
 }
-```
 
-### 4.6 `Enrollment` entity
-
-```csharp
 public class Enrollment
 {
     public int Id { get; set; }
@@ -227,11 +205,7 @@ public class Enrollment
     public Student? Student { get; set; }
     public Course? Course { get; set; }
 }
-```
 
-### 4.7 `Announcement` entity
-
-```csharp
 public class Announcement
 {
     public int Id { get; set; }
@@ -241,13 +215,9 @@ public class Announcement
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
     public bool IsPublished { get; set; } = true;
 
-    public User? Author { get; set; }
+    public Users? Author { get; set; }
 }
-```
 
-### 4.8 `Message` entity
-
-```csharp
 public class Message
 {
     public int Id { get; set; }
@@ -258,103 +228,74 @@ public class Message
     public DateTime SentAt { get; set; } = DateTime.UtcNow;
     public bool IsRead { get; set; }
 
-    public User? Sender { get; set; }
-    public User? Receiver { get; set; }
+    public Users? Sender { get; set; }
+    public Users? Receiver { get; set; }
 }
 ```
 
----
+### 4.3 Key relationships
 
-## 5. Key relationships
+1. `Users` is the base entity of the system (implemented).
+2. `Student` and `Teacher` extend the user's identity with academic profiles (planned).
+3. A `Student` can be enrolled in many `Course` records through `Enrollment` (planned).
+4. A `Teacher` can teach several `Course` records (planned).
+5. `Announcement` represents institutional communications (planned).
+6. `Message` represents internal communication between users (planned).
 
-1. `User` is the base entity of the system.
-2. `Student` and `Teacher` extend the user's identity with academic profiles.
-3. A `Student` can be enrolled in many `Course` records through `Enrollment`.
-4. A `Teacher` can teach several `Course` records.
-5. `Announcement` represents institutional communications.
-6. `Message` represents internal communication between users.
+### 4.4 Data business rules
 
----
+**Implemented (per `README.md`):**
 
-## 6. Suggested business rules
+- Each user has a unique email.
+- Each user has a unique `CaseNumber`.
+- Passwords are stored only as BCrypt hashes, never in plain text.
+- Inactive users must not be authenticated.
+- All persisted dates use UTC (`DateTime.UtcNow`).
 
-- Each user must have a unique email.
-- A student must have a unique enrollment code.
+**Planned (for entities not yet built):**
+
+- A student must have a unique enrollment code (`StudentCode`).
 - A teacher must have a unique employee code.
 - A course must not be duplicated by code and name.
 - A registration cannot be repeated for the same student and course.
 - Communications must include author, date, and publication status.
-- Passwords must be stored only as hashed values, never in plain text.
 
----
-
-## 7. Persistence conventions
-
-To keep the solution organized and scalable, it is recommended to:
+### 4.5 Persistence conventions
 
 - use `DbContext` as the central data access point
-- name entities in singular form (`User`, `Course`, `Student`)
+- name entities in singular form for new tables (`Course`, `Student` — note the existing
+  `Users` entity/table is already plural; keep it as-is to avoid a breaking migration)
 - use auto-increment primary keys (`int` or `Guid` depending on need)
 - use `DateTime.UtcNow` for global dates
-- apply indexes to unique fields such as `Email`, `StudentCode`, `EmployeeCode`
-- add `CreatedAt` and `UpdatedAt` columns where applicable
-- create migrations for each significant schema change
+- apply indexes to unique fields such as `Email`, `CaseNumber`, `StudentCode`,
+  `EmployeeCode`
+- add `CreatedAt` / `UpdatedAt` columns where applicable
+- create a migration for each significant schema change
 
----
+### 4.6 SQL Server / EF Core reference implementation
 
-## 8. Project evolution recommendation
-
-The current project has a solid base to start from, but it should evolve in this sequence:
-
-1. Register and authenticate users
-2. Separate `Student` and `Teacher` profiles
-3. Create courses and subjects
-4. Implement enrollments and grades
-5. Add announcements and internal messages
-6. Expose APIs or services for a modern frontend
-7. Add advanced roles and permissions
-
----
-
-## 9. Current repository state vs. ideal model
-
-| Aspect | Current state | Goal |
-| --- | --- | --- |
-| Base user | Yes | Yes |
-| Real authentication | No | Yes |
-| Student profile | No | Yes |
-| Teacher profile | No | Yes |
-| Courses | No | Yes |
-| Enrollments | No | Yes |
-| Announcements | No | Yes |
-| Messaging | No | Yes |
-| EF Core with multiple entities | Partial | Complete |
-
----
-
-## 10. Conclusion
-
-The current `Users` model is an excellent starting point for a university system. However, to align with VozUniversitaria's goal, it should evolve into a model with users, academic profiles, courses, enrollments, announcements, and messages. This structure will provide greater scalability, maintainability, and alignment with university operations.
-
-## 11. SQL Server and EF Core-oriented variant
-
-For a real SQL Server deployment, the solution should maintain a more explicit business structure. The idea is that each entity has its own table and relationships defined with foreign keys.
-
-### 11.1 Suggested table model
+<details>
+<summary><code>Users</code> table — already applied via migrations</summary>
 
 ```sql
 CREATE TABLE Users (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     Name NVARCHAR(120) NOT NULL,
     LastName NVARCHAR(120) NOT NULL,
+    CaseNumber NVARCHAR(50) NOT NULL UNIQUE,
     Email NVARCHAR(255) NOT NULL UNIQUE,
     PasswordHash NVARCHAR(255) NOT NULL,
     Role INT NOT NULL DEFAULT 0,
     IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-    UpdatedAt DATETIME2 NULL
+    CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
 );
+```
+</details>
 
+<details>
+<summary>Proposed tables for planned entities (not yet migrated)</summary>
+
+```sql
 CREATE TABLE Students (
     Id INT IDENTITY(1,1) PRIMARY KEY,
     UserId INT NOT NULL UNIQUE,
@@ -421,13 +362,15 @@ CREATE TABLE Messages (
     CONSTRAINT FK_Messages_Receiver FOREIGN KEY (ReceiverUserId) REFERENCES Users(Id)
 );
 ```
+</details>
 
-### 11.2 Recommended EF Core structure
+<details>
+<summary>Target <code>AppDbContext</code> (extended)</summary>
 
 ```csharp
 public class AppDbContext : DbContext
 {
-    public DbSet<User> Users { get; set; }
+    public DbSet<Users> Users { get; set; }
     public DbSet<Student> Students { get; set; }
     public DbSet<Teacher> Teachers { get; set; }
     public DbSet<Course> Courses { get; set; }
@@ -437,10 +380,6 @@ public class AppDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        modelBuilder.Entity<User>()
-            .HasIndex(u => u.Email)
-            .IsUnique();
-
         modelBuilder.Entity<Student>()
             .HasIndex(s => s.StudentCode)
             .IsUnique();
@@ -459,28 +398,38 @@ public class AppDbContext : DbContext
     }
 }
 ```
+</details>
 
-### 11.3 Production considerations
+**Production considerations:**
 
-- use `PasswordHash` and do not store passwords in plain text
-- keep `CreatedAt` / `UpdatedAt` in UTC
-- add indexes for frequent searches: email, student code, teacher code, course name
+- add indexes for frequent searches: student code, teacher code, course name (email and
+  `CaseNumber` indexes already exist per `README.md`)
 - separate domain from infrastructure to ease testing and maintenance
-- use migrations with `dotnet ef migrations add ...` and `dotnet ef database update`
+- use `dotnet ef migrations add ...` and `dotnet ef database update` for every schema
+  change (full commands in `README.md`)
 
-### 11.4 Incremental implementation recommendation
+---
 
-1. `Users` as the current base
-2. `Students` and `Teachers` as extended profiles
-3. `Courses` and `Enrollments`
-4. `Announcements` and `Messages`
-5. business services for authentication, enrollment, and administration
+## 5. Current repository state vs. ideal model
 
-This allows growth without breaking the main system structure.
+| Aspect | Current state (per `README.md`) | Goal |
+| --- | --- | --- |
+| Base user model | Yes | Yes |
+| Real authentication | Yes (cookie-based, role claims) | Yes |
+| Student profile | No | Yes |
+| Teacher profile | No | Yes |
+| Courses | No | Yes |
+| Enrollments | No | Yes |
+| Announcements | No | Yes |
+| Messaging | No | Yes |
+| Database / EF Core integration | Yes (3 migrations, seed data) | Yes |
 
-If desired, the next step could be:
+---
 
-- create the complete model in C# with classes such as `User`, `Student`, `Course`, etc.
-- generate the final `DbContext` structure
-- prepare the initial migrations for SQL Server
-- provide an ER diagram proposal ready for documentation
+## 6. Conclusion
+
+The `Users` model, authentication, and SQL Server persistence are implemented and match
+`README.md`. To align with VozUniversitaria's goal, the project still needs academic
+profiles, courses, enrollments, announcements, and messages — detailed entity-by-entity in
+§4.2 above. This structure will provide greater scalability, maintainability, and alignment
+with university operations.

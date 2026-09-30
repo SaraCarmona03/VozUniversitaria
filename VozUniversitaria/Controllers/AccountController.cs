@@ -1,9 +1,6 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-using VozUniversitaria.Data;
 using VozUniversitaria.Models;
 using VozUniversitaria.Services;
 using VozUniversitaria.ViewModels;
@@ -29,9 +26,16 @@ namespace VozUniversitaria.Controllers
         public IActionResult SelectRole()
         {
             return View();
+        private readonly UserManager<Users> _userManager;
+        private readonly SignInManager<Users> _signInManager;
+
+        public AccountController(UserManager<Users> userManager, SignInManager<Users> signInManager)
+        {
+            _userManager = userManager;
+            _signInManager = signInManager;
         }
 
-        // GET: /Account/Register
+        [AllowAnonymous]
         [HttpGet]
         public IActionResult Register(UserRole role)
         {
@@ -39,7 +43,7 @@ namespace VozUniversitaria.Controllers
             return View();
         }
 
-        // POST: /Account/Register
+        [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
@@ -63,6 +67,7 @@ namespace VozUniversitaria.Controllers
 
             // Check if the email is already registered
             var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var existingUser = await _userManager.FindByEmailAsync(model.Email);
             if (existingUser != null)
             {
                 if (!existingUser.IsEmailVerified)
@@ -77,16 +82,31 @@ namespace VozUniversitaria.Controllers
 
             var newUser = new Users
             {
+                UserName = model.Email,
+                Email = model.Email,
                 Name = model.Name,
                 LastName = model.LastName,
                 CaseNumber = model.CaseNumber,
                 Email = email,
                 PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
                 Role = model.Role
+                Role = UserRole.Student,
+                IsActive = true,
+                CreatedAt = DateTime.UtcNow
             };
 
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
+            var result = await _userManager.CreateAsync(newUser, model.Password);
+            if (!result.Succeeded)
+            {
+                foreach (var error in result.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+
+                return View(model);
+            }
+
+            await _userManager.AddToRoleAsync(newUser, "Student");
 
             var result = await _otp.SendAsync(newUser);
             if (result == OtpSendResult.Sent)
@@ -162,13 +182,17 @@ namespace VozUniversitaria.Controllers
         }
 
         // GET: /Account/Login
+            return RedirectToAction(nameof(Login));
+        }
+
+        [AllowAnonymous]
         [HttpGet]
         public IActionResult Login()
         {
             return View();
         }
 
-        // POST: /Account/Login
+        [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> Login(LoginViewModel model)
         {
@@ -181,6 +205,8 @@ namespace VozUniversitaria.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
 
             if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
+            var user = await _userManager.FindByEmailAsync(model.Email);
+            if (user == null || !user.IsActive)
             {
                 ModelState.AddModelError(string.Empty, "Invalid email or password.");
                 return View(model);
@@ -195,24 +221,21 @@ namespace VozUniversitaria.Controllers
             }
 
             var claims = new List<Claim>
+            var result = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: false, lockoutOnFailure: false);
+            if (!result.Succeeded)
             {
-                new Claim(ClaimTypes.Name, user.Name),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role.ToString())
-            };
-
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+                ModelState.AddModelError(string.Empty, "Invalid email or password.");
+                return View(model);
+            }
 
             return RedirectToAction("Index", "Home");
         }
 
-        // POST: /Account/Logout
+        [Authorize]
         [HttpPost]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await _signInManager.SignOutAsync();
             return RedirectToAction("Index", "Home");
         }
 
