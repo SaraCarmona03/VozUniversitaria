@@ -22,7 +22,7 @@ namespace VozUniversitaria.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("Users", b =>
+            modelBuilder.Entity("VozUniversitaria.Models.Users", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -44,6 +44,9 @@ namespace VozUniversitaria.Migrations
                     b.Property<bool>("IsActive")
                         .HasColumnType("bit");
 
+                    b.Property<bool>("IsEmailVerified")
+                        .HasColumnType("bit");
+
                     b.Property<string>("LastName")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -51,6 +54,18 @@ namespace VozUniversitaria.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OtpAttempts")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("OtpExpiresAt")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("OtpHash")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime?>("OtpLastSentAt")
+                        .HasColumnType("datetime2");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()

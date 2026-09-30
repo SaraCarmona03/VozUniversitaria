@@ -7,3 +7,5 @@ obj/
 node_modules/
 .env
 dotnet/
+.DS_Store
+.DS_Store

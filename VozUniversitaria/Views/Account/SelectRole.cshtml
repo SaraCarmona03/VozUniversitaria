@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Select Role";
+}
+
+<h2>¿Quién eres?</h2>
+<p>Selecciona tu rol para continuar con el registro.</p>
+
+<div class="row">
+    <div class="col-md-3 mb-3">
+        <a asp-action="Register" asp-route-role="Student" class="btn btn-outline-primary w-100 p-4">
+            🎓<br />Student
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a asp-action="Register" asp-route-role="Teacher" class="btn btn-outline-primary w-100 p-4">
+            👨‍🏫<br />Teacher
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a asp-action="Register" asp-route-role="Admin" class="btn btn-outline-primary w-100 p-4">
+            🛡️<br />Admin
+        </a>
+    </div>
+    <div class="col-md-3 mb-3">
+        <a asp-action="Register" asp-route-role="Staff" class="btn btn-outline-primary w-100 p-4">
+            🧰<br />Staff
+        </a>
+    </div>
+</div>

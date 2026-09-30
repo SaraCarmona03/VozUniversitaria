@@ -1,5 +1,6 @@
 using Microsoft.EntityFrameworkCore;
 using VozUniversitaria.Data;
+using VozUniversitaria.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -18,6 +19,9 @@ builder.Services.AddAuthentication("Cookies")
         options.LoginPath = "/Account/Login";
         options.AccessDeniedPath = "/Account/Login";
     });   
+
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddScoped<OtpService>();
 
 var app = builder.Build();
 
