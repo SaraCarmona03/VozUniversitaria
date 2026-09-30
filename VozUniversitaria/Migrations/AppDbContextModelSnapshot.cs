@@ -6,6 +6,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using VozUniversitaria.Data;
 
+
 #nullable disable
 
 namespace VozUniversitaria.Migrations
