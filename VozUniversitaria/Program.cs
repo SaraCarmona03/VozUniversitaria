@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using VozUniversitaria.Data;
+using VozUniversitaria.Services;
 using VozUniversitaria.Models;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -39,6 +40,9 @@ builder.Services.AddAuthorization(options =>
     options.AddPolicy("TeachingStaff", policy => policy.RequireRole("Admin", "Teacher"));
     options.AddPolicy("AdminOrTeacher", policy => policy.RequireRole("Admin", "Teacher"));
 });
+
+builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddScoped<OtpService>();
 
 var app = builder.Build();
 
