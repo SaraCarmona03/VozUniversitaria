@@ -1,9 +1,12 @@
 using System.ComponentModel.DataAnnotations;
+using VozUniversitaria.Models;
 
 namespace VozUniversitaria.ViewModels
 {
     public class RegisterViewModel
     {
+        public UserRole Role { get; set; }
+
         [Required]
         public required string Name { get; set; }
 

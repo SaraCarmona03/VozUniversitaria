@@ -35,6 +35,9 @@
                     <input asp-for="Name" class="w-full px-3 py-2 bg-[#1a2234] border border-[#2a3449] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="John" />
                     <span asp-validation-for="Name" class="text-red-400 text-xs mt-1 block"></span>
                 </div>
+<form asp-action="Register" method="post">
+    <input type="hidden" asp-for="Role" value="@ViewData["Role"]" />
+    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
 
                 <div>
                     <label asp-for="LastName" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1"></label>
@@ -53,6 +56,13 @@
                     <input asp-for="Email" type="email" class="w-full px-3 py-2 bg-[#1a2234] border border-[#2a3449] rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent text-sm" placeholder="name@example.com" />
                     <span asp-validation-for="Email" class="text-red-400 text-xs mt-1 block"></span>
                 </div>
+    <div class="form-group">
+        <label asp-for="CaseNumber">
+         @(ViewData["Role"]?.ToString() == "Student" ? "Matrícula" : "Número de empleado")
+        </label>
+        <input asp-for="CaseNumber" class="form-control" />
+        <span asp-validation-for="CaseNumber" class="text-danger"></span>
+    </div>
 
                 <div>
                     <label asp-for="Password" class="block text-xs font-semibold text-gray-400 uppercase tracking-wider mb-1"></label>
