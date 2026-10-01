@@ -1,27 +1,25 @@
 using System.Diagnostics;
-using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using VozUniversitaria.Models;
 
 namespace VozUniversitaria.Controllers;
 
-[Authorize(Roles = "Student,Teacher,Admin,Staff")]
 public class HomeController : Controller
 {
     private readonly ILogger<HomeController> _logger;
-    private readonly UserManager<Users> _userManager;
 
-    public HomeController(ILogger<HomeController> logger, UserManager<Users> userManager)
+    public HomeController(ILogger<HomeController> logger)
     {
         _logger = logger;
-        _userManager = userManager;
     }
 
-    public async Task<IActionResult> Index()
+    public IActionResult Index()
     {
-        var usuario = await _userManager.GetUserAsync(User);
-        ViewBag.Nombre = usuario is null ? "Usuario" : $"{usuario.Name} {usuario.LastName}";
+        if (User.Identity?.IsAuthenticated != true)
+    {
+        return RedirectToAction("Login", "Account");
+    }
+    
         return View();
     }
 

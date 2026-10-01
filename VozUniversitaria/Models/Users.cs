@@ -18,26 +18,6 @@ public class Users
     public DateTime? OtpExpiresAt { get; set; } // When the current code expires
     public int OtpAttempts { get; set; } // Wrong attempts for the current code
     public DateTime? OtpLastSentAt { get; set; } // Used for the resend cooldown
-using Microsoft.AspNetCore.Identity;
-using System.ComponentModel.DataAnnotations;
-
-public class Users : IdentityUser
-{
-    [Required]
-    [StringLength(100)]
-    public string Name { get; set; } = string.Empty;
-
-    [Required]
-    [StringLength(100)]
-    public string LastName { get; set; } = string.Empty;
-
-    [Required]
-    [StringLength(50)]
-    public string CaseNumber { get; set; } = string.Empty;
-
-    public UserRole Role { get; set; }
-    public bool IsActive { get; set; } = true;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }
 
 public enum UserRole
