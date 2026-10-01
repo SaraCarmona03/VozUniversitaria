@@ -1,8 +1,118 @@
 ﻿@{
-    ViewData["Title"] = "Home Page";
+    ViewData["Title"] = "Inicio";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<style>
+    /* Fondo de la página */
+    body { background:#0b1120; color:#e5e7eb; }
+    .navbar { background:#111827 !important; border-bottom:1px solid #1f2937 !important; }
+    .navbar .navbar-brand, .navbar .nav-link { color:#fff !important; }
+    .footer { background:transparent; color:#9ca3af !important; border-top:1px solid #1f2937 !important; }
+    .footer a { color:#818cf8; }
+
+    .vu-card { background:#111827; border:1px solid #1f2937; border-radius:12px; padding:16px; height:100%; }
+    .vu-title { color:#fff; font-weight:600; font-size:1rem; margin-bottom:4px; }
+    .vu-text { color:#9ca3af; font-size:.875rem; margin-bottom:12px; }
+    .vu-meta { color:#9ca3af; font-size:.8rem; }
+    .vu-input { background:#111827; border:1px solid #1f2937; color:#fff; }
+    .vu-input:focus { background:#111827; color:#fff; border-color:#4f46e5; box-shadow:none; }
+    .vu-chip { border:0; border-radius:8px; padding:4px 14px; font-size:.85rem; }
+    .vu-badge { border-radius:6px; padding:2px 10px; font-size:.75rem; }
+    .cat-aviso { background:#0f2a4d; color:#60a5fa; }
+    .cat-evento { background:#0f2e1a; color:#4ade80; }
+    .cat-sugerencia { background:#3a2506; color:#fbbf24; }
+    .cat-queja { background:#3b1219; color:#f87171; }
+</style>
+
+<div class="container py-4">
+
+    <!-- Encabezado -->
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3 mb-3">
+        <div>
+            <h1 class="h4 text-white fw-bold mb-1">Your voice counts</h1>
+            <p class="vu-meta mb-0">Share complaints, suggestions, events, and notices with your community.</p>
+        </div>
+        <button type="button" class="btn text-white" style="background:#1f2937; border:1px solid #374151;">+ Nueva publicación</button>
+    </div>
+
+    <!-- Buscador -->
+    <input type="search" class="form-control vu-input mb-3" placeholder="Buscar publicaciones" aria-label="Buscar publicaciones" />
+
+    <!-- Filtros por categoría -->
+    <div class="d-flex flex-wrap gap-2 mb-4">
+        <button type="button" class="vu-chip bg-white text-dark">All</button>
+        <button type="button" class="vu-chip cat-queja">Complaints</button>
+        <button type="button" class="vu-chip cat-sugerencia">Suggestions</button>
+        <button type="button" class="vu-chip cat-evento">Events</button>
+        <button type="button" class="vu-chip cat-aviso">Notices</button>
+    </div>
+
+    <!-- Tarjetas de publicaciones -->
+    <div class="row row-cols-1 row-cols-md-2 g-3">
+
+        <!-- Aviso -->
+        <div class="col">
+            <div class="vu-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="vu-badge cat-aviso">Notices</span>
+                    <span class="vu-meta">Today</span>
+                </div>
+                <div class="vu-title">Library schedule change</div>
+                <p class="vu-text">During final exams, it will be open from 7:00 a.m. to 10:00 p.m.</p>
+                <div class="d-flex justify-content-between vu-meta">
+                    <span>Coordinación</span>
+                    <span>3 comentarios</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Evento -->
+        <div class="col">
+            <div class="vu-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="vu-badge cat-evento">Events</span>
+                    <span class="vu-meta">2 hours ago</span>
+                </div>
+                <div class="vu-title">Feria de proyectos de software</div>
+                <p class="vu-text">Viernes 10 de octubre, 10:00 h, auditorio principal.</p>
+                <div class="d-flex justify-content-between vu-meta">
+                    <span>48 asistirán</span>
+                    <span>7 comentarios</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sugerencia -->
+        <div class="col">
+            <div class="vu-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="vu-badge cat-sugerencia">Suggestion</span>
+                    <span class="vu-meta">Yesterday</span>
+                </div>
+                <div class="vu-title">More outlets in the cafeteria</div>
+                <p class="vu-text">There are not enough places to charge laptops while studying.</p>
+                <div class="d-flex justify-content-between vu-meta">
+                    <span>32 supports</span>
+                    <span>5 comments</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Queja -->
+        <div class="col">
+            <div class="vu-card">
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <span class="vu-badge cat-queja">Complaint</span>
+                    <span class="vu-meta">3 days ago</span>
+                </div>
+                <div class="vu-title">Aire acondicionado sin funcionar</div>
+                <p class="vu-text">El aula B-204 lleva una semana sin clima.</p>
+                <div class="d-flex justify-content-between align-items-center vu-meta">
+                    <span class="vu-badge cat-sugerencia">In review</span>
+                    <span>21 supports</span>
+                </div>
+            </div>
+        </div>
+
+    </div>
 </div>
