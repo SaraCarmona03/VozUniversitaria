@@ -49,12 +49,10 @@ public class OtpService
             return OtpSendResult.Sent;
         }
         catch (Exception ex)
-        {
-            _logger.LogError(ex, "Could not send the OTP email to user {UserId}", user.Id);
-            user.OtpLastSentAt = null; // allow an immediate retry
-            await _db.SaveChangesAsync();
-            return OtpSendResult.Failed;
-        }
+{
+Console.WriteLine(ex.ToString());
+throw;
+}
     }
 
     /// <summary>Checks the code. Marks the email as verified when it is correct.</summary>
