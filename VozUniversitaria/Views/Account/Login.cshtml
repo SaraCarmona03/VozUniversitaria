@@ -1,27 +1,104 @@
-@model VozUniversitaria.ViewModels.LoginViewModel
-
 @{
-    ViewData["Title"] = "Login";
+    ViewData["Title"] = "Iniciar sesión";
+    Layout = null;
 }
 
-<h2>Login</h2>
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - VozUniversitaria</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0; min-height: 100vh; display: flex; align-items: center; justify-content: center;
+            background: #0b1120; color: #e5e7eb; padding: 24px;
+            font-family: "Segoe UI", system-ui, -apple-system, Roboto, Arial, sans-serif;
+        }
+        .login-card { width: 100%; max-width: 420px; background: #111827; border: 1px solid #1f2937; border-radius: 16px; overflow: hidden; }
+        .login-header { background: linear-gradient(135deg, #4f46e5, #6366f1); padding: 28px 24px; text-align: center; }
+        .login-icon { width: 48px; height: 48px; margin: 0 auto 12px; border-radius: 50%; background: rgba(255,255,255,.18); display: flex; align-items: center; justify-content: center; }
+        .login-header h1 { margin: 0; font-size: 24px; font-weight: 700; color: #fff; }
+        .login-header p { margin: 6px 0 0; font-size: 14px; color: #c7d2fe; }
+        .login-body { padding: 24px; }
+        label.campo { display: block; font-size: 12px; font-weight: 600; letter-spacing: .05em; color: #9ca3af; margin-bottom: 6px; text-transform: uppercase; }
+        .entrada {
+            width: 100%; background: #1f2937; border: 1px solid #374151; border-radius: 8px;
+            padding: 11px 12px; color: #fff; font-size: 14px; outline: none; margin-bottom: 16px;
+        }
+        .entrada:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.25); }
+        .entrada::placeholder { color: #6b7280; }
+        .con-boton { position: relative; }
+        .con-boton .entrada { padding-right: 84px; }
+        .btn-ver {
+            position: absolute; right: 8px; top: 6px; background: transparent; border: 0;
+            color: #818cf8; font-size: 12px; cursor: pointer; padding: 6px 8px;
+        }
+        .fila-opciones { display: flex; justify-content: space-between; align-items: center; font-size: 13px; margin-bottom: 18px; }
+        .fila-opciones label { color: #9ca3af; cursor: pointer; }
+        .fila-opciones a, .pie a { color: #818cf8; text-decoration: none; }
+        .fila-opciones a:hover, .pie a:hover { text-decoration: underline; }
+        .btn-entrar {
+            width: 100%; background: #4f46e5; color: #fff; border: 0; border-radius: 8px;
+            padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer;
+        }
+        .btn-entrar:hover { background: #4338ca; }
+        .errores { background: #3b1219; color: #f87171; border-radius: 8px; padding: 10px 12px; font-size: 13px; margin-bottom: 16px; }
+        .errores ul { margin: 0; padding-left: 18px; }
+        .pie { border-top: 1px solid #1f2937; margin-top: 22px; padding-top: 18px; text-align: center; font-size: 14px; color: #9ca3af; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <div class="login-header">
+            <div class="login-icon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                    <path d="M3 11v2a1 1 0 0 0 1 1h2l5 4V6L6 10H4a1 1 0 0 0-1 1z" />
+                    <path d="M15 9a4 4 0 0 1 0 6" />
+                    <path d="M18 6a8 8 0 0 1 0 12" />
+                </svg>
+            </div>
+            <h1>University Voice</h1>
+            <p>Welcome back. Log in to your account.</p>
+        </div>
 
-<form asp-action="Login" method="post">
-    <div asp-validation-summary="ModelOnly" class="text-danger"></div>
+        <div class="login-body">
+            <form asp-controller="Account" asp-action="Login" method="post">
 
-    <div class="form-group">
-        <label asp-for="Email"></label>
-        <input asp-for="Email" class="form-control" />
-        <span asp-validation-for="Email" class="text-danger"></span>
+                <div asp-validation-summary="All" class="errores"></div>
+
+                <label class="campo" for="Email">Email</label>
+                <input class="entrada" type="email" id="Email" name="Email" placeholder="nombre@ejemplo.com" autocomplete="email" required />
+
+                <label class="campo" for="Password">Password</label>
+                <div class="con-boton">
+                    <input class="entrada" type="password" id="Password" name="Password" placeholder="••••••••" autocomplete="current-password" required />
+                    <button type="button" class="btn-ver" id="btnVer">Show</button>
+                </div>
+
+                <div class="fila-opciones">
+                    <label><input type="checkbox" name="RememberMe" value="true" /> Remember me</label>
+                    <a href="#">Forgot your password?</a>
+                </div>
+
+                <button type="submit" class="btn-entrar">Log in</button>
+            </form>
+
+            <div class="pie">
+                Don't have an account? <a asp-controller="Account" asp-action="Register">Sign up here</a>
+            </div>
+        </div>
     </div>
 
-    <div class="form-group">
-        <label asp-for="Password"></label>
-        <input asp-for="Password" class="form-control" />
-        <span asp-validation-for="Password" class="text-danger"></span>
-    </div>
-
-    <button type="submit" class="btn btn-primary">Login</button>
-</form>
-
-<p>Don't have an account? <a asp-action="SelectRole">Register here</a></p>
+    <script>
+        const campo = document.getElementById("Password");
+        const boton = document.getElementById("btnVer");
+        boton.addEventListener("click", function () {
+            const oculto = campo.type === "password";
+            campo.type = oculto ? "text" : "password";
+            boton.textContent = oculto ? "Ocultar" : "Mostrar";
+        });
+    </script>
+</body>
+</html>
