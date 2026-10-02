@@ -1,435 +1,380 @@
+<div align="center">
 
+#  VozUniversitaria
 
-## 1. Overview
+### System Architecture
 
-See `PROPOSAL.md` §1 for the full project overview. Per `README.md`, the implementation
-currently includes: the ASP.NET Core MVC skeleton, user registration and cookie-based login
-(`AccountController`), role-based authorization (`Student`/`Teacher`/`Admin`/`Staff` claims
-and policies), and SQL Server persistence via EF Core (`AppDbContext`, 3 migrations, seed
-data). Content-domain features — courses, enrollments, announcements, messaging, CMS CRUD —
-are not yet implemented; see §4.2 "Planned evolution."
+*Web platform for communication, reports, and suggestions for the university community*
+
+![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet&logoColor=white)
+![ASP.NET Core](https://img.shields.io/badge/ASP.NET%20Core-MVC-5C2D91?logo=dotnet&logoColor=white)
+![SQL Server](https://img.shields.io/badge/SQL%20Server-Relational-CC2927?logo=microsoftsqlserver&logoColor=white)
+![EF Core](https://img.shields.io/badge/EF%20Core-8-512BD4)
+![Bootstrap](https://img.shields.io/badge/Bootstrap-5-7952B3?logo=bootstrap&logoColor=white)
+![Docker](https://img.shields.io/badge/Dev%20Containers-Docker-2496ED?logo=docker&logoColor=white)
+
+</div>
 
 ---
 
-## 2. Proposed architecture
+##  Table of Contents
 
-The diagram below is the target internal structure (adds the ViewModel/Service split on top
-of `README.md`'s higher-level diagram):
+1. [Introduction and Overview](#1-introduction-and-overview)
+2. [Requirements and Quality Attributes](#2-requirements-and-quality-attributes-non-functional-requirements)
+3. [Technology Stack](#3-technology-stack)
+4. [Structure and Architectural Pattern](#4-structure-and-architectural-pattern)
+5. [Main Components and Responsibilities](#5-main-components-and-responsibilities)
+6. [Communication and Data Flows](#6-communication-and-data-flows)
+7. [Design Decisions (ADRs)](#7-design-decisions-adrs)
+8. [Structural Data Model](#8-structural-data-model)
+
+---
+
+## 1. Introduction and Overview
+
+###  Purpose
+
+Develop a comprehensive web platform that acts as the **official channel for communication, reports, and suggestions** between students, faculty, administrative staff, and university authorities, promoting transparency and the efficient resolution of procedures and incidents.
+
+###  Scope of Current Development (Phase 1)
+
+In the current phase, the project focuses on building a **solid foundation of security, access control, and identity management**. The implemented features include:
+
+| Module | Description |
+|--------|-------------|
+|  **Authentication** | User registration and secure login. |
+|  **Security Verification** | Identity validation through institutional email verification. |
+|  **Role-Based Access Control (RBAC)** | Differentiated permissions and views for Students, Teachers, Administrators, and Staff. |
+
+---
+
+## 2. Requirements and Quality Attributes (Non-Functional Requirements)
+
+###  Scalability
+
+- **Performance:** .NET 8 can handle a high volume of concurrent users by increasing hardware resources (*vertical scalability*).
+- **Infrastructure:** the MVC architecture makes it easier to adopt load balancers and Docker containers in the future (*horizontal scalability*).
+- **Database:** queries optimized with EF Core 8 to avoid slowdowns as the number of users in SQL Server grows.
+
+###  Availability
+
+- **Continuity:** availability target of **99.9% uptime**, ensuring the platform is consistently active for the university community.
+- **Consistent environments:** use of Dev Containers to reduce configuration errors between development and final deployment.
+
+###  Security
+
+- **Access control:** secure authentication and role-based authorization (RBAC) to segment the functions of Students, Teachers, Administrators, and Staff.
+- **Encryption:** passwords protected with hashing through `BCrypt.Net-Next`, and data in transit encrypted over HTTPS.
+- **Web protection (production environment):** native mitigation against XSS attacks in Razor views and use of anti-CSRF tokens in forms.
+- **Validation:** mandatory account activation through institutional email verification.
+
+###  Maintainability
+
+- **Clean code:** separation of concerns thanks to the MVC pattern, making it easy to add future modules (reports, announcements, etc.) without breaking existing code.
+- **Teamwork:** use of GitFlow to develop features in an isolated, organized, and safe way.
+- **System evolution:** database version control through EF Core migrations.
+
+---
+
+## 3. Technology Stack
+
+| Layer | Technologies | Justification |
+|-------|--------------|---------------|
+|  **Frontend** | Razor Views, HTML5, CSS3, JavaScript, Bootstrap 5, jQuery | Razor renders the interface quickly on the server with C#. Bootstrap 5 ensures a responsive design (adapts to mobile phones) and jQuery handles interactivity and form validation without reloading the page. |
+|  **Backend** | .NET 8 (C#), ASP.NET Core MVC | MVC cleanly separates the code so future features can be added easily. .NET 8 offers very high performance and native tools to manage roles and block attacks. |
+|  **Database and Security** | SQL Server, Entity Framework Core 8, BCrypt.Net-Next | SQL Server securely organizes relational data (users and roles). EF Core 8 allows querying the database using C# (no manual SQL), and BCrypt hashes passwords so they cannot be stolen. |
+|  **Infrastructure / DevOps** | VS Code Dev Containers, Git, GitFlow | Dev Containers (Docker) ensure the whole team works with the same software configuration. GitFlow organizes code into independent branches so the team can work without overwriting each other's progress. |
+
+---
+
+## 4. Structure and Architectural Pattern
+
+###  Chosen pattern: Monolithic Model-View-Controller (MVC)
+
+The application adopts a **Modular Monolith** architecture based on the native MVC design pattern of ASP.NET Core. All components (business logic, database, and interface) are unified in a single deployable project.
+
+###  Justification versus other alternatives
+
+- **Development speed versus microservices:** a microservices system would add unnecessary complexity (networking, multiple databases, communication APIs) for the current phase. The monolith allows registration and login to be developed right away.
+- **Efficient coupling with Razor:** with Razor Views, the View and the Controller live in the same server ecosystem. This removes the need for a decoupled backend (such as a separate Web API with a React frontend), reducing data transfer time and simplifying deployment.
+- **Separation of concerns:** although it is a monolith, MVC clearly divides the code: **Models** manage data through EF Core, **Views** control the interface, and **Controllers** handle the request logic.
+
+###  Architecture Diagram
+
+Flow of data and components within the architecture using .NET 8 and Dev Containers:
 
 ```mermaid
-flowchart LR
-    A[Client / Browser] --> B[ASP.NET Core MVC]
-    B --> C[Controllers]
-    C --> D[ViewModels]
-    C --> E[Services / Business Logic]
-    E --> F[Domain Models]
-    F --> G[Entity Framework Core]
-    G --> H[(SQL Server)]
-    B --> I[Razor Views]
-    I --> J[wwwroot / CSS / JS]
+flowchart TD
+    A[" <b>Client: Web Browser</b><br/>HTML5 · Bootstrap 5 · jQuery"]
+
+    subgraph DC[" Environment: VS Code Dev Container"]
+        subgraph S[" Application Server: ASP.NET Core Monolith"]
+            V[" <b>Razor Views</b><br/>Server-side interface rendering"]
+            C[" <b>MVC Controllers</b><br/>Authentication · Email validation"]
+            B[" <b>Security</b><br/>BCrypt.Net-Next"]
+            D[" <b>Data Layer</b><br/>Entity Framework Core 8"]
+        end
+    end
+
+    DB[(" <b>SQL Server Relational</b><br/>Tables: Users · Roles · Verifications")]
+
+    A -- "HTTPS requests<br/>(Login / Registration / Forms)" --> S
+    S --- V
+    S --- C
+    C --> B
+    S --- D
+    D -- "Structured queries<br/>(C# / LINQ)" --> DB
+
+    classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1;
+    classDef app fill:#ede7f6,stroke:#5e35b1,stroke-width:1.5px,color:#311b92;
+    classDef db fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c;
+    class A client;
+    class V,C,B,D app;
+    class DB db;
 ```
-
-### 2.1 Presentation layer
-
-**Currently implemented** (per `README.md` → Project Structure):
-
-- `Controllers/HomeController.cs`
-- `Controllers/AccountController.cs`
-- `ViewModels/LoginViewModel.cs`, `ViewModels/RegisterViewModel.cs` (input validation with
-  DataAnnotations)
-- `Views/Home/*.cshtml`, `Views/Shared/*.cshtml`
-
-> `README.md`'s Project Structure tree doesn't list a `Views/Account/` folder, even
-> though registration/login are described as implemented. Confirm the actual view path
-> before referencing it elsewhere.
-
-**Planned, not yet implemented:**
-
-- Controllers for courses, announcements, internal messaging, admin dashboard, CMS CRUD
-
-### 2.2 Domain layer
-
-**Currently implemented:** the `Users` entity (§4.1) with a `UserRole` enum (`Student`,
-`Teacher`, `Admin`, `Staff`), unique `Email` and `CaseNumber` constraints, and BCrypt
-password hashing.
-
-**Planned:** `Student`, `Teacher`, `Course`, `Enrollment`, `Announcement`, `Message`
-entities (§4.2).
-
-### 2.3 Persistence layer
-
-**Currently implemented:** `AppDbContext` and `AppDbContextFactory` (`Data/`), 3 EF Core
-migrations (`InitialCreate`, `AddUserConstraintsAndSeeding`, `FixSeedUserPasswordHash`),
-SQL Server connection via `ConnectionStrings:DefaultConnection` → `VozUniversitariaDb`.
-Full migration commands are documented in `README.md` → "Database and Entity Framework
-Core" — not repeated here.
 
 ---
 
-## 3. Project evolution recommendation
+## 5. Main Components and Responsibilities
 
-1. Register and authenticate users — done
-2. Separate `Student` and `Teacher` profiles
-3. Create courses and subjects
-4. Implement enrollments and grades
-5. Add announcements and internal messages
-6. Expose APIs or services for a modern frontend
-7. Add advanced roles and permissions
+###  Authentication and Access Control Module (*Auth Module*)
 
-> For the phase/status-level roadmap, see `PROPOSAL.md` §5.
+**Function:** securely manage the lifecycle of user sessions within the platform.
+
+**Responsibility boundaries:**
+
+- Process login and logout.
+- Validate the credentials entered by comparing them against the database records.
+- Implement the **Role-Based Authorization (RBAC)** mechanism so that, after login, the user is redirected only to the views authorized for their role (*Student, Teacher, Administrator, or Staff*).
+
+####  Users and Roles Diagram (RBAC)
+
+```mermaid
+flowchart TD
+    U["👤 <b>User</b><br/>Institutional email · CaseNumber"]
+
+    subgraph REG[" Registration and verification"]
+        R1["Registration<br/><i>RegisterViewModel</i>"]
+        R2["Inactive account<br/>EmailConfirmed = false"]
+        R3["Verification with code<br/>sent by email"]
+        R4["Active account<br/>EmailConfirmed = true"]
+        R1 --> R2 --> R3 --> R4
+    end
+
+    subgraph AUTH[" Login"]
+        L1["Login<br/><i>LoginViewModel</i>"]
+        L2{"Role authorization<br/>(Role Claims)"}
+        L1 --> L2
+    end
+
+    ST[" <b>Student</b>"]
+    TE[" <b>Teacher</b>"]
+    AD[" <b>Admin</b><br/>Administrator"]
+    SF[" <b>Staff</b>"]
+
+    U --> R1
+    R4 --> L1
+    L2 --> ST
+    L2 --> TE
+    L2 --> AD
+    L2 --> SF
+
+    classDef user fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1;
+    classDef step fill:#ede7f6,stroke:#5e35b1,stroke-width:1.5px,color:#311b92;
+    classDef role fill:#e8f5e9,stroke:#2e7d32,stroke-width:2px,color:#1b5e20;
+    class U user;
+    class R1,R2,R3,R4,L1,L2 step;
+    class ST,TE,AD,SF role;
+```
+
+After logging in, each role is redirected only to the views authorized for it.
+
+###  User Management and Verification Module (*User Management*)
+
+**Business logic it encapsulates:**
+
+- **Structured registration:** captures new users' data while ensuring format compliance (such as the mandatory use of institutional email).
+- **Preventive hashing:** delegates secure password hashing to `BCrypt.Net-Next` before passwords leave the business logic.
+- **Identity verification:** generates a one-time **verification code (OTP)** and manages the user's state (*Inactive / Active*). It sends the code to the institutional email so the user can enter it on the platform and confirm they legitimately belong to the university community.
+
+###  Persistence Layer (*Data Access Layer*)
+
+**Communication with the database:**
+
+- **Entity Framework Core 8** is used as the system's official Object-Relational Mapper (ORM).
+- .NET 8 services and controllers **do not write SQL manually**: they run structured queries with **LINQ** in C#, which EF Core automatically translates into efficient statements for SQL Server.
+- This layer encapsulates the data schema (table models for Users and Roles) and uses **Migrations** to apply changes in a controlled way and maintain referential integrity.
 
 ---
 
-## 4. Data model
+## 6. Communication and Data Flows
 
-### 4.1 Current implemented entity: `Users`
+###  Protocols
 
-> Verify the fields below against the current `Models/Users.cs` and the applied
-> migrations — this reflects the previously documented shape plus `README.md`'s confirmed
-> constraints (unique `Email`/`CaseNumber`, BCrypt hash, `Role`).
+| Protocol | Use |
+|----------|-----|
+| **HTTPS** | Main and mandatory protocol. All communication between the user's browser (Client) and the .NET 8 server is encrypted with TLS to protect sensitive data such as passwords and emails. |
+| **Form POST / AJAX (HTTP)** | Standard synchronous requests (HTML forms using POST) and asynchronous requests with jQuery (AJAX) to update parts of the screen without reloading the page. |
+| **SMTP** | External protocol used by the server to connect to the email service and send account verification messages. |
 
-```csharp
-public class Users
-{
-    public int Id { get; set; }
-    public required string Name { get; set; }
-    public required string LastName { get; set; }
-    public required string CaseNumber { get; set; }
-    public required string Email { get; set; }
-    public required string PasswordHash { get; set; }
-    public UserRole Role { get; set; }
-    public bool IsActive { get; set; } = true;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-}
+###  Typical Flow: User Registration and Email Verification
 
-public enum UserRole
-{
-    Student,
-    Teacher,
-    Admin,
-    Staff
-}
+The exact path the data follows when a new member of the university community creates an account:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as  Client / Browser
+    participant C as  MVC Controller
+    participant DB as  Database (SQL)
+
+    U->>C: Fills in and submits the form<br/>(Data + Anti-Forgery Token)
+    Note over C: Validates data and role<br/>Hashes password with BCrypt<br/>Generates verification code (OTP)
+    C->>DB: Saves user (Inactive)
+    C-->>U: Sends SMTP email with the verification code
+
+    rect rgb(235, 245, 255)
+    Note over U,DB: ✉️ The user receives the code and enters it on the platform
+    U->>C: Enters the verification code
+    Note over C: Compares received code<br/>Changes status to "Active"
+    C->>DB: Updates record
+    C-->>U: Redirects to Login screen
+    end
 ```
+
+###  Step by step
+
+1. **Data submission:** the user enters their data (name, institutional email, role) and clicks *Register*. The form travels over HTTPS POST, including a security token against CSRF attacks.
+2. **Processing and hashing:** the Controller validates the fields and uses `BCrypt.Net-Next` to hash the password. It also generates a one-time verification code (OTP) to validate the email.
+3. **Initial persistence:** through Entity Framework Core 8, the system inserts the record into SQL Server with `EmailConfirmed = false`.
+4. **Email dispatch:** the backend uses SMTP to automatically send an email to the user's institutional address with the generated verification code.
+5. **Account activation:** the user checks their inbox and enters the code on the verification screen. The browser sends a new request to the controller, which looks up the code in the database, validates that it matches, sets the status to `EmailConfirmed = true`, and redirects the user to the login screen.
+
+---
+
+## 7. Design Decisions (ADRs)
+
+<details open>
+<summary><b>ADR-001 · Monolithic Architecture (ASP.NET Core MVC)</b></summary>
+
+| | |
+|---|---|
+| **Context** | The core of VozUniversitaria (registration, login, and roles) needed to be structured quickly. |
+| **Decision** | Adopt a Modular Monolith with Razor Views to render the interface directly on the server. |
+| **Consequences** | Faster development, unified native security, and simple deployment, at the cost of short-term flexibility for native mobile apps. |
+
+</details>
+
+<details open>
+<summary><b>ADR-002 · Cookie-Based Authentication</b></summary>
+
+| | |
+|---|---|
+| **Context** | The system must restrict screens according to user type (`Student`, `Teacher`, `Admin`, `Staff`). |
+| **Decision** | Implement native Cookie-Based Authentication together with role-based authorization policies (*Role Claims*). |
+| **Consequences** | Automatic and secure session control in the browser, without the complexity of configuring and implementing JWT tokens. |
+
+</details>
+
+<details open>
+<summary><b>ADR-003 · Unique Constraints in the Database</b></summary>
+
+| | |
+|---|---|
+| **Context** | Prevent duplicate accounts or fake identities in the university portal. |
+| **Decision** | Apply unique indexes in SQL Server through EF Core 8 on the `Email` and `CaseNumber` (student ID) fields. |
+| **Consequences** | Absolute data integrity at the server level, requiring exceptions to be handled in C# to show clean messages to the user. |
+
+</details>
+
+<details open>
+<summary><b>ADR-004 · Development Containers (Dev Containers)</b></summary>
+
+| | |
+|---|---|
+| **Context** | The team needed to avoid configuration problems caused by differences in operating systems or .NET versions. |
+| **Decision** | Standardize the environment using VS Code Dev Containers with Docker. |
+| **Consequences** | One-click ready environment and full parity across the team, requiring local machines to support Docker. |
+
+</details>
+
+---
+
+## 8. Structural Data Model
+
+For the current phase, the system works with a relational schema centered on the **`Users`** entity. Persistence is managed in SQL Server through Entity Framework Core 8, applying constraints at the database level and business validations at the interface level through *DataAnnotations*.
+
+###  Main Entity: `Users`
+
+| Field | C# Type | SQL Type | Constraints / Validation | Description |
+|-------|---------|----------|--------------------------|-------------|
+| `Id` | `int` / `Guid` | `INT IDENTITY` / `UNIQUEIDENTIFIER` |  Primary Key | Unique identifier and primary key of the record. |
+| `Email` | `string` | `NVARCHAR(256)` | `Required`, `EmailAddress`, Unique Index | Institutional email address. Duplicates are not allowed. |
+| `CaseNumber` | `string` | `NVARCHAR(50)` | `Required`, Unique Index | Unique case number, student ID, or university registration number. |
+| `PasswordHash` | `string` | `NVARCHAR(MAX)` | `Required` | Password hashed with the BCrypt algorithm. |
+| `Role` | `string` / `enum` | `NVARCHAR(20)` | `Required` | Role for access control (`Student`, `Teacher`, `Admin`, `Staff`). |
+| `EmailConfirmed` | `bool` | `BIT` | Default: `false` | Email verification status (activated through an OTP code sent by email). |
+
+###  Relationship Between Models and ViewModels
+
+To avoid exposing database entities directly to the browser, the data flow implements the decoupling pattern through **ViewModels**, located in the `ViewModels/` folder:
+
+**1. `RegisterViewModel`**
+- Encapsulates the capture fields: `Email`, `CaseNumber`, `Password`, and `ConfirmPassword`.
+- Applies runtime validation rules (for example, checking that both passwords match) before passing the data to the controller.
+
+**2. `LoginViewModel`**
+- Reduces the payload to the essential fields: `Email` (or `CaseNumber`) and `Password`.
+- Includes the optional session persistence property (`RememberMe`) for managing authentication cookies.
+
+###  Database Schema (SQL Server)
+
+Persistence is managed in SQL Server through Entity Framework Core 8. The current model consists of the `Users` entity with strict integrity constraints:
 
 ```mermaid
 erDiagram
     USERS {
-        int Id PK
-        string Name
-        string LastName
-        string CaseNumber UK
-        string Email UK
-        string PasswordHash
-        int Role
-        boolean IsActive
-        datetime CreatedAt
+        int Id PK "INT IDENTITY · Auto-incrementing unique identifier"
+        nvarchar Email UK "NVARCHAR(256) · Institutional email (unique index)"
+        nvarchar CaseNumber UK "NVARCHAR(50) · Student ID or registration number (unique index)"
+        nvarchar PasswordHash "NVARCHAR(MAX) · Password hashed with BCrypt"
+        nvarchar Role "NVARCHAR(20) · Admin, Teacher, Student, Staff"
+        bit EmailConfirmed "Default false · Email verified"
     }
 ```
 
-Applied via migration `InitialCreate` (plus `AddUserConstraintsAndSeeding` for the unique
-indexes and seed data, and `FixSeedUserPasswordHash`).
+###  Data Flow and Layers (Decoupling)
 
-### 4.2 Planned evolution
-
-Each entity below must be added to the C# model and `AppDbContext`, followed by a new EF
-Core migration containing its foreign keys and indexes.
+To protect the integrity of the database, the system does not expose the `Users` entity directly in the views. Instead, it implements **intermediate ViewModels** in the application layer:
 
 ```mermaid
-erDiagram
-    USER ||--o{ ANNOUNCEMENT : creates
-    USER ||--o{ MESSAGE : sends
-    USER ||--o| STUDENT : profile
-    USER ||--o| TEACHER : profile
-    STUDENT ||--o{ ENROLLMENT : enrolls
-    COURSE ||--o{ ENROLLMENT : has
-    TEACHER ||--o{ COURSE : teaches
-    COURSE ||--o{ CLASS_SESSION : contains
-    STUDENT ||--o{ ATTENDANCE : records
-    COURSE ||--o{ ASSIGNMENT : includes
-    STUDENT ||--o{ ASSIGNMENT_SUBMISSION : submits
-    TEACHER ||--o{ GRADE : evaluates
+flowchart LR
+    A[" <b>Razor View</b><br/>.cshtml"]
+    B[" <b>ViewModels</b>"]
+    C[" <b>MVC Controller</b>"]
+    D[(" <b>EF Core 8</b><br/>SQL Server")]
+
+    A -- "Sends clean data" --> B
+    B -- "Applies DataAnnotations" --> C
+    C -- "Maps to Entity" --> D
+
+    classDef view fill:#e3f2fd,stroke:#1565c0,stroke-width:1.5px,color:#0d47a1;
+    classDef vm fill:#e8f5e9,stroke:#2e7d32,stroke-width:1.5px,color:#1b5e20;
+    classDef ctrl fill:#ede7f6,stroke:#5e35b1,stroke-width:1.5px,color:#311b92;
+    classDef db fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c;
+    class A view;
+    class B vm;
+    class C ctrl;
+    class D db;
 ```
 
-```csharp
-public class Student
-{
-    public int Id { get; set; }
-    public int UserId { get; set; }
-    public string StudentCode { get; set; } = string.Empty;
-    public string Career { get; set; } = string.Empty;
-    public int Semester { get; set; }
-    public bool IsGraduated { get; set; }
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    public Users? User { get; set; }
-    public ICollection<Enrollment>? Enrollments { get; set; }
-}
-
-public class Teacher
-{
-    public int Id { get; set; }
-    public int UserId { get; set; }
-    public string EmployeeCode { get; set; } = string.Empty;
-    public string Department { get; set; } = string.Empty;
-    public string Title { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-    public Users? User { get; set; }
-    public ICollection<Course>? Courses { get; set; }
-}
-
-public class Course
-{
-    public int Id { get; set; }
-    public string Code { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public int Credits { get; set; }
-    public int TeacherId { get; set; }
-    public int Semester { get; set; }
-    public bool IsActive { get; set; } = true;
-
-    public Teacher? Teacher { get; set; }
-    public ICollection<Enrollment>? Enrollments { get; set; }
-    public ICollection<Assignment>? Assignments { get; set; }
-}
-
-public class Enrollment
-{
-    public int Id { get; set; }
-    public int StudentId { get; set; }
-    public int CourseId { get; set; }
-    public DateTime EnrolledAt { get; set; } = DateTime.UtcNow;
-    public string Status { get; set; } = "Active";
-
-    public Student? Student { get; set; }
-    public Course? Course { get; set; }
-}
-
-public class Announcement
-{
-    public int Id { get; set; }
-    public int AuthorUserId { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-    public bool IsPublished { get; set; } = true;
-
-    public Users? Author { get; set; }
-}
-
-public class Message
-{
-    public int Id { get; set; }
-    public int SenderUserId { get; set; }
-    public int ReceiverUserId { get; set; }
-    public string Subject { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-    public DateTime SentAt { get; set; } = DateTime.UtcNow;
-    public bool IsRead { get; set; }
-
-    public Users? Sender { get; set; }
-    public Users? Receiver { get; set; }
-}
-```
-
-### 4.3 Key relationships
-
-1. `Users` is the base entity of the system (implemented).
-2. `Student` and `Teacher` extend the user's identity with academic profiles (planned).
-3. A `Student` can be enrolled in many `Course` records through `Enrollment` (planned).
-4. A `Teacher` can teach several `Course` records (planned).
-5. `Announcement` represents institutional communications (planned).
-6. `Message` represents internal communication between users (planned).
-
-### 4.4 Data business rules
-
-**Implemented (per `README.md`):**
-
-- Each user has a unique email.
-- Each user has a unique `CaseNumber`.
-- Passwords are stored only as BCrypt hashes, never in plain text.
-- Inactive users must not be authenticated.
-- All persisted dates use UTC (`DateTime.UtcNow`).
-
-**Planned (for entities not yet built):**
-
-- A student must have a unique enrollment code (`StudentCode`).
-- A teacher must have a unique employee code.
-- A course must not be duplicated by code and name.
-- A registration cannot be repeated for the same student and course.
-- Communications must include author, date, and publication status.
-
-### 4.5 Persistence conventions
-
-- use `DbContext` as the central data access point
-- name entities in singular form for new tables (`Course`, `Student` — note the existing
-  `Users` entity/table is already plural; keep it as-is to avoid a breaking migration)
-- use auto-increment primary keys (`int` or `Guid` depending on need)
-- use `DateTime.UtcNow` for global dates
-- apply indexes to unique fields such as `Email`, `CaseNumber`, `StudentCode`,
-  `EmployeeCode`
-- add `CreatedAt` / `UpdatedAt` columns where applicable
-- create a migration for each significant schema change
-
-### 4.6 SQL Server / EF Core reference implementation
-
-<details>
-<summary><code>Users</code> table — already applied via migrations</summary>
-
-```sql
-CREATE TABLE Users (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    Name NVARCHAR(120) NOT NULL,
-    LastName NVARCHAR(120) NOT NULL,
-    CaseNumber NVARCHAR(50) NOT NULL UNIQUE,
-    Email NVARCHAR(255) NOT NULL UNIQUE,
-    PasswordHash NVARCHAR(255) NOT NULL,
-    Role INT NOT NULL DEFAULT 0,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME()
-);
-```
-</details>
-
-<details>
-<summary>Proposed tables for planned entities (not yet migrated)</summary>
-
-```sql
-CREATE TABLE Students (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    UserId INT NOT NULL UNIQUE,
-    StudentCode NVARCHAR(50) NOT NULL UNIQUE,
-    Career NVARCHAR(150) NOT NULL,
-    Semester INT NOT NULL,
-    IsGraduated BIT NOT NULL DEFAULT 0,
-    CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-    CONSTRAINT FK_Students_Users FOREIGN KEY (UserId) REFERENCES Users(Id)
-);
-
-CREATE TABLE Teachers (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    UserId INT NOT NULL UNIQUE,
-    EmployeeCode NVARCHAR(50) NOT NULL UNIQUE,
-    Department NVARCHAR(150) NOT NULL,
-    Title NVARCHAR(150) NOT NULL,
-    CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-    CONSTRAINT FK_Teachers_Users FOREIGN KEY (UserId) REFERENCES Users(Id)
-);
-
-CREATE TABLE Courses (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    Code NVARCHAR(50) NOT NULL UNIQUE,
-    Name NVARCHAR(200) NOT NULL,
-    Description NVARCHAR(MAX) NULL,
-    Credits INT NOT NULL,
-    TeacherId INT NOT NULL,
-    Semester INT NOT NULL,
-    IsActive BIT NOT NULL DEFAULT 1,
-    CONSTRAINT FK_Courses_Teachers FOREIGN KEY (TeacherId) REFERENCES Teachers(Id)
-);
-
-CREATE TABLE Enrollments (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    StudentId INT NOT NULL,
-    CourseId INT NOT NULL,
-    EnrolledAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-    Status NVARCHAR(50) NOT NULL DEFAULT 'Active',
-    CONSTRAINT FK_Enrollments_Students FOREIGN KEY (StudentId) REFERENCES Students(Id),
-    CONSTRAINT FK_Enrollments_Courses FOREIGN KEY (CourseId) REFERENCES Courses(Id),
-    CONSTRAINT UQ_Enrollment UNIQUE (StudentId, CourseId)
-);
-
-CREATE TABLE Announcements (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    AuthorUserId INT NOT NULL,
-    Title NVARCHAR(200) NOT NULL,
-    Content NVARCHAR(MAX) NOT NULL,
-    CreatedAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-    IsPublished BIT NOT NULL DEFAULT 1,
-    CONSTRAINT FK_Announcements_Users FOREIGN KEY (AuthorUserId) REFERENCES Users(Id)
-);
-
-CREATE TABLE Messages (
-    Id INT IDENTITY(1,1) PRIMARY KEY,
-    SenderUserId INT NOT NULL,
-    ReceiverUserId INT NOT NULL,
-    Subject NVARCHAR(200) NULL,
-    Content NVARCHAR(MAX) NOT NULL,
-    SentAt DATETIME2 NOT NULL DEFAULT SYSUTCDATETIME(),
-    IsRead BIT NOT NULL DEFAULT 0,
-    CONSTRAINT FK_Messages_Sender FOREIGN KEY (SenderUserId) REFERENCES Users(Id),
-    CONSTRAINT FK_Messages_Receiver FOREIGN KEY (ReceiverUserId) REFERENCES Users(Id)
-);
-```
-</details>
-
-<details>
-<summary>Target <code>AppDbContext</code> (extended)</summary>
-
-```csharp
-public class AppDbContext : DbContext
-{
-    public DbSet<Users> Users { get; set; }
-    public DbSet<Student> Students { get; set; }
-    public DbSet<Teacher> Teachers { get; set; }
-    public DbSet<Course> Courses { get; set; }
-    public DbSet<Enrollment> Enrollments { get; set; }
-    public DbSet<Announcement> Announcements { get; set; }
-    public DbSet<Message> Messages { get; set; }
-
-    protected override void OnModelCreating(ModelBuilder modelBuilder)
-    {
-        modelBuilder.Entity<Student>()
-            .HasIndex(s => s.StudentCode)
-            .IsUnique();
-
-        modelBuilder.Entity<Teacher>()
-            .HasIndex(t => t.EmployeeCode)
-            .IsUnique();
-
-        modelBuilder.Entity<Course>()
-            .HasIndex(c => c.Code)
-            .IsUnique();
-
-        modelBuilder.Entity<Enrollment>()
-            .HasIndex(e => new { e.StudentId, e.CourseId })
-            .IsUnique();
-    }
-}
-```
-</details>
-
-**Production considerations:**
-
-- add indexes for frequent searches: student code, teacher code, course name (email and
-  `CaseNumber` indexes already exist per `README.md`)
-- separate domain from infrastructure to ease testing and maintenance
-- use `dotnet ef migrations add ...` and `dotnet ef database update` for every schema
-  change (full commands in `README.md`)
+1. **`RegisterViewModel`:** captures `Email`, `CaseNumber`, `Password`, and `ConfirmPassword`. Applies server-side validation before registering.
+2. **`LoginViewModel`:** requests only the basic credentials (`Email` and `Password`) to process the authentication cookie.
 
 ---
 
-## 5. Current repository state vs. ideal model
+<div align="center">
 
-| Aspect | Current state (per `README.md`) | Goal |
-| --- | --- | --- |
-| Base user model | Yes | Yes |
-| Real authentication | Yes (cookie-based, role claims) | Yes |
-| Student profile | No | Yes |
-| Teacher profile | No | Yes |
-| Courses | No | Yes |
-| Enrollments | No | Yes |
-| Announcements | No | Yes |
-| Messaging | No | Yes |
-| Database / EF Core integration | Yes (3 migrations, seed data) | Yes |
+**VozUniversitaria** · System Architecture · Phase 1
 
----
-
-## 6. Conclusion
-
-The `Users` model, authentication, and SQL Server persistence are implemented and match
-`README.md`. To align with VozUniversitaria's goal, the project still needs academic
-profiles, courses, enrollments, announcements, and messages — detailed entity-by-entity in
-§4.2 above. This structure will provide greater scalability, maintainability, and alignment
-with university operations.
+</div>
