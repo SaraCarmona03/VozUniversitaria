@@ -262,3 +262,8 @@ This project does not currently specify a license file. If you plan to share or 
 This project is currently in an early development stage and is best suited for continued extension by the project owner or development team.
 
 
+
+## Contributors
+
+- Diana Paula Baza Nevarez ([@dianabazaneUES](https://github.com/dianabazaneUES))
+
