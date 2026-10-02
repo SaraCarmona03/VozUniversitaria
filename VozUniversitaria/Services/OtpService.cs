@@ -41,8 +41,10 @@ public class OtpService
 
         try
         {
+            var email = user.Email
+                ?? throw new InvalidOperationException("Cannot send an OTP to a user without an email address.");
             await _email.SendAsync(
-                user.Email,
+                email,
                 "Your VozUniversitaria verification code",
                 $"Your verification code is {code}. It expires in {ExpiryMinutes} minutes.\n\n" +
                 "If you did not create this account, you can ignore this message.");
@@ -73,6 +75,7 @@ throw;
         if (ok)
         {
             user.IsEmailVerified = true;
+            user.EmailConfirmed = true;
             user.OtpHash = null;
             user.OtpExpiresAt = null;
             user.OtpAttempts = 0;
