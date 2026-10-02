@@ -1,4 +1,5 @@
 using System.Diagnostics;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using VozUniversitaria.Models;
 
@@ -13,13 +14,9 @@ public class HomeController : Controller
         _logger = logger;
     }
 
+    [Authorize]
     public IActionResult Index()
     {
-        if (User.Identity?.IsAuthenticated != true)
-    {
-        return RedirectToAction("Login", "Account");
-    }
-    
         return View();
     }
 

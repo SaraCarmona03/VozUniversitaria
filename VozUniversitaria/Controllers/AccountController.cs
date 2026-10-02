@@ -1,9 +1,5 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
-using System.Security.Claims;
-using VozUniversitaria.Data;
 using VozUniversitaria.Models;
 using VozUniversitaria.Services;
 using VozUniversitaria.ViewModels;
@@ -12,13 +8,22 @@ namespace VozUniversitaria.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly UserManager<Users> _userManager;
+        private readonly SignInManager<Users> _signInManager;
+        private readonly RoleManager<IdentityRole<int>> _roleManager;
         private readonly OtpService _otp;
         private readonly string[] _allowedDomains;
 
-        public AccountController(AppDbContext context, OtpService otp, IConfiguration config)
+        public AccountController(
+            UserManager<Users> userManager,
+            SignInManager<Users> signInManager,
+            RoleManager<IdentityRole<int>> roleManager,
+            OtpService otp,
+            IConfiguration config)
         {
-            _context = context;
+            _userManager = userManager;
+            _signInManager = signInManager;
+            _roleManager = roleManager;
             _otp = otp;
             _allowedDomains = config.GetSection("AllowedEmailDomains").Get<string[]>()
                               ?? Array.Empty<string>();
@@ -35,6 +40,12 @@ namespace VozUniversitaria.Controllers
         [HttpGet]
         public IActionResult Register(UserRole role)
         {
+            if (!IsPublicRegistrationRole(role))
+            {
+                TempData["Error"] = "That role cannot be selected during public registration.";
+                return RedirectToAction(nameof(SelectRole));
+            }
+
             ViewData["Role"] = role;
             return View();
         }
@@ -43,7 +54,6 @@ namespace VozUniversitaria.Controllers
         [HttpPost]
         public async Task<IActionResult> Register(RegisterViewModel model)
         {
-            // Keep the selected role available when the form is shown again
             ViewData["Role"] = model.Role;
 
             if (!ModelState.IsValid)
@@ -61,8 +71,13 @@ namespace VozUniversitaria.Controllers
                 return View(model);
             }
 
-            // Check if the email is already registered
-            var existingUser = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            if (!IsPublicRegistrationRole(model.Role))
+            {
+                ModelState.AddModelError(nameof(model.Role), "Select a role available for public registration.");
+                return View(model);
+            }
+
+            var existingUser = await _userManager.FindByEmailAsync(email);
             if (existingUser != null)
             {
                 if (!existingUser.IsEmailVerified)
@@ -75,18 +90,36 @@ namespace VozUniversitaria.Controllers
                 return View(model);
             }
 
+            if (!await EnsureRoleExistsAsync(model.Role.ToString()))
+            {
+                ModelState.AddModelError(string.Empty, "The selected role could not be configured. Please try again.");
+                return View(model);
+            }
+
             var newUser = new Users
             {
                 Name = model.Name,
                 LastName = model.LastName,
                 CaseNumber = model.CaseNumber,
+                UserName = email,
                 Email = email,
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password),
+                LockoutEnabled = true,
                 Role = model.Role
             };
 
-            _context.Users.Add(newUser);
-            await _context.SaveChangesAsync();
+            var createResult = await _userManager.CreateAsync(newUser, model.Password);
+            if (!createResult.Succeeded)
+            {
+                AddIdentityErrors(createResult);
+                return View(model);
+            }
+
+            var roleResult = await _userManager.AddToRoleAsync(newUser, model.Role.ToString());
+            if (!roleResult.Succeeded)
+            {
+                AddIdentityErrors(roleResult);
+                return View(model);
+            }
 
             var result = await _otp.SendAsync(newUser);
             if (result == OtpSendResult.Sent)
@@ -118,9 +151,10 @@ namespace VozUniversitaria.Controllers
                 return View(model);
             }
 
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == model.Email);
+            var email = model.Email.Trim().ToLowerInvariant();
+            var user = await _userManager.FindByEmailAsync(email);
 
-            if (user != null && user.IsEmailVerified)
+            if (user is not null && user.IsEmailVerified)
             {
                 return RedirectToAction("Login");
             }
@@ -139,7 +173,7 @@ namespace VozUniversitaria.Controllers
         [HttpPost]
         public async Task<IActionResult> ResendCode(string email)
         {
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var user = await _userManager.FindByEmailAsync(email.Trim().ToLowerInvariant());
 
             if (user != null && !user.IsEmailVerified)
             {
@@ -178,32 +212,73 @@ namespace VozUniversitaria.Controllers
             }
 
             var email = model.Email.Trim().ToLowerInvariant();
-            var user = await _context.Users.FirstOrDefaultAsync(u => u.Email == email);
+            var user = await _userManager.FindByEmailAsync(email);
 
-            if (user == null || !BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
+            if (user == null)
             {
                 ModelState.AddModelError(string.Empty, "Invalid email or password.");
                 return View(model);
             }
 
-            // Credentials are correct, but the email still has to be verified
+            if (!user.IsActive)
+            {
+                ModelState.AddModelError(string.Empty, "This account is inactive. Please contact support.");
+                return View(model);
+            }
+
             if (!user.IsEmailVerified)
             {
-                await _otp.SendAsync(user); // does nothing if a code was sent less than a minute ago
+                await _otp.SendAsync(user);
                 TempData["Info"] = "Please verify your email first. Check your inbox for the code, or request a new one.";
                 return RedirectToAction("VerifyEmail", new { email = user.Email });
             }
 
-            var claims = new List<Claim>
+            if (!user.EmailConfirmed)
             {
-                new Claim(ClaimTypes.Name, user.Name),
-                new Claim(ClaimTypes.Email, user.Email),
-                new Claim(ClaimTypes.Role, user.Role.ToString())
-            };
+                ModelState.AddModelError(string.Empty, "Please verify your email before signing in.");
+                return View(model);
+            }
 
-            var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+            if (!Enum.IsDefined(user.Role))
+            {
+                ModelState.AddModelError(string.Empty, "The account has an invalid role. Please contact support.");
+                return View(model);
+            }
 
-            await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, new ClaimsPrincipal(claimsIdentity));
+            var passwordResult = await _signInManager.CheckPasswordSignInAsync(
+                user,
+                model.Password,
+                lockoutOnFailure: true);
+
+            if (passwordResult.IsLockedOut)
+            {
+                ModelState.AddModelError(string.Empty, "This account is temporarily locked. Please try again later.");
+                return View(model);
+            }
+
+            if (!passwordResult.Succeeded)
+            {
+                ModelState.AddModelError(string.Empty, "Invalid email or password.");
+                return View(model);
+            }
+
+            if (!await EnsureRoleExistsAsync(user.Role.ToString()))
+            {
+                ModelState.AddModelError(string.Empty, "The account role could not be verified. Please contact support.");
+                return View(model);
+            }
+
+            if (!await _userManager.IsInRoleAsync(user, user.Role.ToString()))
+            {
+                var roleResult = await _userManager.AddToRoleAsync(user, user.Role.ToString());
+                if (!roleResult.Succeeded)
+                {
+                    AddIdentityErrors(roleResult);
+                    return View(model);
+                }
+            }
+
+            await _signInManager.SignInAsync(user, model.RememberMe);
 
             return RedirectToAction("Index", "Home");
         }
@@ -212,9 +287,31 @@ namespace VozUniversitaria.Controllers
         [HttpPost]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await _signInManager.SignOutAsync();
             return RedirectToAction("Index", "Home");
         }
+
+        private async Task<bool> EnsureRoleExistsAsync(string roleName)
+        {
+            if (await _roleManager.RoleExistsAsync(roleName))
+            {
+                return true;
+            }
+
+            var result = await _roleManager.CreateAsync(new IdentityRole<int>(roleName));
+            return result.Succeeded || await _roleManager.RoleExistsAsync(roleName);
+        }
+
+        private void AddIdentityErrors(IdentityResult result)
+        {
+            foreach (var error in result.Errors)
+            {
+                ModelState.AddModelError(string.Empty, error.Description);
+            }
+        }
+
+        private static bool IsPublicRegistrationRole(UserRole role) =>
+            role is UserRole.Student or UserRole.Teacher or UserRole.Staff;
 
         private bool IsAllowedDomain(string email)
         {

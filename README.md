@@ -34,12 +34,13 @@ Framework Core.
 - Static assets served from `wwwroot`
 - Home and privacy pages
 - User registration and login
-- Cookie-based authentication
-- Role claims and authorization policies for administrators and teaching staff
+- ASP.NET Core Identity authentication using application cookies
+- Role-based authorization with Identity roles
+- Public registration is limited to Student, Teacher, and Staff; Admin is not selectable or accepted from a forged request
 - User validation with ViewModels and DataAnnotations
-- BCrypt password hashing
-- Unique email and `CaseNumber` constraints
-- EF Core migrations and seed data for development
+- Identity password hashing, with transparent BCrypt hash migration on the user's next successful login
+- Institutional email verification using one-time codes (OTP)
+- SQL Server persistence and EF Core migrations
 
 ## Project Structure
 
@@ -162,15 +163,28 @@ configured as `ConnectionStrings:DefaultConnection` in
 `VozUniversitaria/appsettings.json` and points to the local development database
 `VozUniversitariaDb` on `localhost:1433`.
 
-The current data model contains the `Users` entity with the following roles:
+The current data model contains the `Users` entity, which extends `IdentityUser<int>` and
+retains the application's profile, role, and OTP verification fields. ASP.NET Core Identity
+stores authentication and role data in `Users` and the `AspNetRoles`, `AspNetUserRoles`,
+`AspNetUserClaims`, `AspNetRoleClaims`, `AspNetUserLogins`, and `AspNetUserTokens` tables.
+The application roles are:
 
 - `Student`
 - `Teacher`
 - `Admin`
 - `Staff`
 
-The database includes unique indexes for `Email` and `CaseNumber`, and development seed
-data for an administrator and a teacher. Passwords are stored as BCrypt hashes.
+The Identity migration preserves the existing `Users` table and its rows, backfills Identity
+user names and normalized email values, and copies the existing OTP verification status to
+Identity's `EmailConfirmed` field. Existing BCrypt password hashes remain valid and are
+rehashed with the Identity password hasher after a successful login. New registrations use
+the Identity password hasher directly. OTP email verification remains part of the
+registration and sign-in flow. If the database contains the older string-keyed Identity
+tables, the migration copies them to `LegacyAspNet*` archive tables, rebuilds the active
+Identity tables with integer keys, imports legacy accounts whose email is not already in
+`Users`, and maps their roles and Identity data to the matching account. When an email
+already exists in `Users`, that existing user remains the active account and the full
+legacy row remains archived.
 
 ### Apply migrations
 
@@ -190,9 +204,8 @@ dotnet ef migrations list --project VozUniversitaria/VozUniversitaria.csproj
 The project currently includes the following migrations:
 
 1. `20260908045623_InitialCreate`
-2. `20260918021207_AddUserConstraintsAndSeeding`
-3. `20260918023553_FixSeedUserPasswordHash`
-4. `20260922013733_AddIdentitySupport`
+2. `20260930020433_AddEmailVerification`
+3. `20261002063924_AddIdentityCore`
 
 ### Local SQL Server connection
 
@@ -260,10 +273,4 @@ This project does not currently specify a license file. If you plan to share or 
 ## Maintainers
 
 This project is currently in an early development stage and is best suited for continued extension by the project owner or development team.
-
-
-
-## Contributors
-
-- Diana Paula Baza Nevarez ([@dianabazaneUES](https://github.com/dianabazaneUES))
 
