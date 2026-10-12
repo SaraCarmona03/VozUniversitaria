@@ -274,3 +274,7 @@ This project does not currently specify a license file. If you plan to share or 
 
 This project is currently in an early development stage and is best suited for continued extension by the project owner or development team.
 
+## Backend framework
+
+ASP.NET Core 8 (MVC). How to start it, project layout and request handling:
+see [docs/backend-framework.md](docs/backend-framework.md).
