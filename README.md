@@ -19,7 +19,6 @@ Framework Core.
 - CSS3
 - JavaScript
 - Bootstrap
-- jQuery
 - Entity Framework Core 8
 - SQL Server
 - BCrypt.Net-Next
@@ -46,35 +45,43 @@ Framework Core.
 
 ```text
 VozUniversitaria/
-├── Controllers/
+├── Routers/
 │   ├── AccountController.cs
 │   └── HomeController.cs
 ├── Data/
 │   ├── AppDbContext.cs
 │   └── AppDbContextFactory.cs
+├── Repositories/
+│   ├── IOtpRepository.cs
+│   └── OtpRepository.cs
 ├── Migrations/
-│   ├── 20260908045623_InitialCreate.cs
-│   ├── 20260918021207_AddUserConstraintsAndSeeding.cs
-│   └── 20260918023553_FixSeedUserPasswordHash.cs
+│   ├── EF Core migration files
+│   └── AppDbContextModelSnapshot.cs
 ├── Models/
 │   ├── ErrorViewModel.cs
+│   ├── StudentProfile.cs
 │   └── Users.cs
+├── Services/
+│   ├── IEmailSender.cs
+│   ├── LegacyBcryptPasswordHasher.cs
+│   ├── OtpService.cs
+│   ├── SmtpEmailSender.cs
+│   └── UsersClaimsPrincipalFactory.cs
 ├── ViewModels/
 │   ├── LoginViewModel.cs
-│   └── RegisterViewModel.cs
+│   ├── RegisterViewModel.cs
+│   └── VerifyEmailViewModel.cs
 ├── Views/
 │   ├── Home/
 │   │   ├── Index.cshtml
 │   │   └── Privacy.cshtml
 │   ├── Shared/
 │   │   ├── _Layout.cshtml
-│   │   ├── _Layout.cshtml.css
-│   │   └── _ValidationScriptsPartial.cshtml
+│   │   └── _Layout.cshtml.css
 │   ├── _ViewImports.cshtml
 │   └── _ViewStart.cshtml
 ├── wwwroot/
 │   ├── css/
-│   ├── js/
 │   └── lib/
 ├── Program.cs
 ├── appsettings.json
@@ -89,12 +96,15 @@ VozUniversitaria/
 ```mermaid
 flowchart LR
     A[Browser] --> B[ASP.NET Core MVC App]
-    B --> C[Controllers]
-    C --> D[Models]
-    C --> E[Razor Views]
-    E --> F[Bootstrap / CSS / JS]
-    B --> G[Static Files - wwwroot]
-    B --> H[Routing + Middleware]
+    B --> C[Routers - MVC Controllers]
+    C --> D[Services]
+    D --> E[Repositories]
+    E --> F[Data - EF Core]
+    F --> G[(SQL Server)]
+    C --> H[Razor Views]
+    H --> I[Bootstrap / CSS / JS]
+    B --> J[Static Files - wwwroot]
+    B --> K[Routing + Middleware]
 ```
 
 ## Getting Started
@@ -140,7 +150,7 @@ dotnet build
 dotnet run --project VozUniversitaria/VozUniversitaria.csproj
 ```
 
-5. Open the browser to the local URL shown in the terminal, usually:
+6. Open the browser to the local URL shown in the terminal, usually:
 
 ```text
 https://localhost:5001
@@ -155,6 +165,19 @@ The project includes the default ASP.NET Core configuration files:
 - `appsettings.json` — application settings
 - `appsettings.Development.json` — development-specific settings
 - `Properties/launchSettings.json` — local launch profiles
+
+SMTP credentials must not be committed to configuration files. Configure them with
+ASP.NET Core User Secrets for local development:
+
+```bash
+dotnet user-secrets set "Smtp:User" "your-email@example.com" --project VozUniversitaria/VozUniversitaria.csproj
+dotnet user-secrets set "Smtp:Password" "your-smtp-app-password" --project VozUniversitaria/VozUniversitaria.csproj
+dotnet user-secrets set "Smtp:From" "your-email@example.com" --project VozUniversitaria/VozUniversitaria.csproj
+```
+
+Use credentials provided by your email provider. For deployed environments, configure all
+required `Smtp:*` settings through environment variables or a secret manager instead of
+User Secrets.
 
 ## Database and Entity Framework Core
 
@@ -206,6 +229,7 @@ The project currently includes the following migrations:
 1. `20260908045623_InitialCreate`
 2. `20260930020433_AddEmailVerification`
 3. `20261002063924_AddIdentityCore`
+4. `20261016025735_AddStudentProfile`
 
 ### Local SQL Server connection
 
@@ -228,10 +252,11 @@ To connect from VS Code (using the **SQL Server (mssql)** extension):
 
 ## Development Notes
 
-The current implementation is intentionally focused on authentication and the initial
-user data model. It does not yet include:
+The current implementation focuses on authentication and the initial user data model.
+The student profile schema exists, but profile management flows and the following
+features are not implemented yet:
 
-- student and teacher profile entities
+- teacher profiles
 - courses and enrollments
 - announcements and internal messages
 - content management CRUD
@@ -239,8 +264,7 @@ user data model. It does not yet include:
 - external service integrations
 - admin dashboard
 
-The planned data model and future entities are documented in `architecture.md` and
-`DATA-MODEL.md`.
+The planned data model and future entities are documented in `architecture.md`.
 
 ## Contribution Guidelines
 
@@ -273,7 +297,6 @@ This project does not currently specify a license file. If you plan to share or 
 ## Maintainers
 
 This project is currently in an early development stage and is best suited for continued extension by the project owner or development team.
-
 ## Backend framework
 
 ASP.NET Core 8 (MVC). How to start it, project layout and request handling:

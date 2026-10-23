@@ -25,9 +25,9 @@ to avoid configuration discrepancies (already implemented; see `README.md` →
 | :--- | :--- | :--- |
 | **Framework** | ASP.NET Core MVC | .NET 8.0 |
 | **Language** | C# | 12.0 |
-| **Database** | SQL Server (MSSQL) | Entity Framework Core 8 — implemented (3 migrations, seed data) |
-| **Frontend** | Razor Views, HTML5, CSS3 | Bootstrap / Custom styles, jQuery |
-| **Security** | BCrypt.Net-Next | Password hashing — implemented |
+| **Database** | SQL Server (MSSQL) | Entity Framework Core 8 — implemented (4 migrations) |
+| **Frontend** | Razor Views, HTML5, CSS3, JavaScript | Bootstrap and custom styles |
+| **Security** | ASP.NET Core Identity; BCrypt.Net-Next for legacy hash migration | Password hashing and upgrade — implemented |
 | **Version Control** | Git / GitFlow | Feature-branch workflow |
 | **Environment** | VS Code Dev Containers | Debian-based Docker container (includes SQL Server 2019 container) |
 ---

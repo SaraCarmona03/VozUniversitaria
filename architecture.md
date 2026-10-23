@@ -64,7 +64,7 @@ In the current phase, the project focuses on building a **solid foundation of se
 ###  Security
 
 - **Access control:** secure authentication and role-based authorization (RBAC) to segment the functions of Students, Teachers, Administrators, and Staff.
-- **Encryption:** passwords protected with hashing through `BCrypt.Net-Next`, and data in transit encrypted over HTTPS.
+- **Password storage:** ASP.NET Core Identity hashes new passwords; legacy BCrypt hashes are verified and upgraded after a successful login. Production traffic must use HTTPS.
 - **Web protection (production environment):** native mitigation against XSS attacks in Razor views and use of anti-CSRF tokens in forms.
 - **Validation:** mandatory account activation through institutional email verification.
 
@@ -80,9 +80,9 @@ In the current phase, the project focuses on building a **solid foundation of se
 
 | Layer | Technologies | Justification |
 |-------|--------------|---------------|
-|  **Frontend** | Razor Views, HTML5, CSS3, JavaScript, Bootstrap 5, jQuery | Razor renders the interface quickly on the server with C#. Bootstrap 5 ensures a responsive design (adapts to mobile phones) and jQuery handles interactivity and form validation without reloading the page. |
+|  **Frontend** | Razor Views, HTML5, CSS3, JavaScript, Bootstrap 5 | Razor renders the interface on the server with C#. Bootstrap provides responsive styling and client-side behavior; forms submit through standard MVC requests. |
 |  **Backend** | .NET 8 (C#), ASP.NET Core MVC | MVC cleanly separates the code so future features can be added easily. .NET 8 offers very high performance and native tools to manage roles and block attacks. |
-|  **Database and Security** | SQL Server, Entity Framework Core 8, BCrypt.Net-Next | SQL Server securely organizes relational data (users and roles). EF Core 8 allows querying the database using C# (no manual SQL), and BCrypt hashes passwords so they cannot be stolen. |
+|  **Database and Security** | SQL Server, Entity Framework Core 8, ASP.NET Core Identity, BCrypt.Net-Next (legacy compatibility) | SQL Server stores relational data and EF Core provides typed access. Identity hashes new passwords; the BCrypt dependency is retained only to verify and upgrade legacy hashes. |
 |  **Infrastructure / DevOps** | VS Code Dev Containers, Git, GitFlow | Dev Containers (Docker) ensure the whole team works with the same software configuration. GitFlow organizes code into independent branches so the team can work without overwriting each other's progress. |
 
 ---
@@ -97,7 +97,7 @@ The application adopts a **Modular Monolith** architecture based on the native M
 
 - **Development speed versus microservices:** a microservices system would add unnecessary complexity (networking, multiple databases, communication APIs) for the current phase. The monolith allows registration and login to be developed right away.
 - **Efficient coupling with Razor:** with Razor Views, the View and the Controller live in the same server ecosystem. This removes the need for a decoupled backend (such as a separate Web API with a React frontend), reducing data transfer time and simplifying deployment.
-- **Separation of concerns:** although it is a monolith, MVC clearly divides the code: **Models** manage data through EF Core, **Views** control the interface, and **Controllers** handle the request logic.
+- **Separation of concerns:** although it is a monolith, HTTP endpoints (MVC controllers in `Routers`) handle requests, `Services` apply application rules, and `Repositories` persist data through `Data` and Entity Framework Core. **Views** render the interface.
 
 ###  Architecture Diagram
 
@@ -105,14 +105,16 @@ Flow of data and components within the architecture using .NET 8 and Dev Contain
 
 ```mermaid
 flowchart TD
-    A[" <b>Client: Web Browser</b><br/>HTML5 · Bootstrap 5 · jQuery"]
+    A[" <b>Client: Web Browser</b><br/>HTML5 · Bootstrap 5 · JavaScript"]
 
     subgraph DC[" Environment: VS Code Dev Container"]
         subgraph S[" Application Server: ASP.NET Core Monolith"]
             V[" <b>Razor Views</b><br/>Server-side interface rendering"]
-            C[" <b>MVC Controllers</b><br/>Authentication · Email validation"]
-            B[" <b>Security</b><br/>BCrypt.Net-Next"]
-            D[" <b>Data Layer</b><br/>Entity Framework Core 8"]
+            C[" <b>Routers / MVC Controllers</b><br/>HTTP requests and views"]
+            SVC[" <b>Services</b><br/>Application and business logic"]
+            R[" <b>Repositories</b><br/>Persistence operations"]
+            B[" <b>Security</b><br/>ASP.NET Core Identity<br/>Legacy BCrypt migration"]
+            D[" <b>Data</b><br/>DbContext · Entity Framework Core 8"]
         end
     end
 
@@ -121,15 +123,17 @@ flowchart TD
     A -- "HTTPS requests<br/>(Login / Registration / Forms)" --> S
     S --- V
     S --- C
-    C --> B
-    S --- D
+    C --> SVC
+    SVC --> B
+    SVC --> R
+    R --> D
     D -- "Structured queries<br/>(C# / LINQ)" --> DB
 
     classDef client fill:#e3f2fd,stroke:#1565c0,stroke-width:2px,color:#0d47a1;
     classDef app fill:#ede7f6,stroke:#5e35b1,stroke-width:1.5px,color:#311b92;
     classDef db fill:#ffebee,stroke:#c62828,stroke-width:2px,color:#b71c1c;
     class A client;
-    class V,C,B,D app;
+    class V,C,SVC,R,B,D app;
     class DB db;
 ```
 
@@ -194,16 +198,18 @@ After logging in, each role is redirected only to the views authorized for it.
 **Business logic it encapsulates:**
 
 - **Structured registration:** captures new users' data while ensuring format compliance (such as the mandatory use of institutional email).
-- **Preventive hashing:** delegates secure password hashing to `BCrypt.Net-Next` before passwords leave the business logic.
+- **Password hashing:** delegates new password hashes and verification to ASP.NET Core Identity. The legacy BCrypt hasher verifies older accounts and requests a hash upgrade after successful authentication.
 - **Identity verification:** generates a one-time **verification code (OTP)** and manages the user's state (*Inactive / Active*). It sends the code to the institutional email so the user can enter it on the platform and confirm they legitimately belong to the university community.
 
-###  Persistence Layer (*Data Access Layer*)
+###  Routers, Services, and Repositories
 
-**Communication with the database:**
+**Responsibility boundaries:**
 
-- **Entity Framework Core 8** is used as the system's official Object-Relational Mapper (ORM).
-- .NET 8 services and controllers **do not write SQL manually**: they run structured queries with **LINQ** in C#, which EF Core automatically translates into efficient statements for SQL Server.
-- This layer encapsulates the data schema (table models for Users and Roles) and uses **Migrations** to apply changes in a controlled way and maintain referential integrity.
+- **`Routers/`:** MVC controllers define the HTTP routes, validate request models, and select the response or view.
+- **`Services/`:** application and business logic, such as OTP generation and email dispatch.
+- **`Repositories/`:** persistence operations used by services. For example, `OtpRepository` saves OTP and verification state without exposing the DbContext to `OtpService`.
+- **`Data/`:** `AppDbContext` and its design-time factory configure Entity Framework Core 8. **Migrations** remain in `Migrations/`.
+- Queries and persistence use Entity Framework Core and LINQ; SQL is generated by the ORM.
 
 ---
 
@@ -214,30 +220,42 @@ After logging in, each role is redirected only to the views authorized for it.
 | Protocol | Use |
 |----------|-----|
 | **HTTPS** | Main and mandatory protocol. All communication between the user's browser (Client) and the .NET 8 server is encrypted with TLS to protect sensitive data such as passwords and emails. |
-| **Form POST / AJAX (HTTP)** | Standard synchronous requests (HTML forms using POST) and asynchronous requests with jQuery (AJAX) to update parts of the screen without reloading the page. |
+| **HTTP forms** | Standard synchronous requests using HTML forms and MVC POST actions. |
 | **SMTP** | External protocol used by the server to connect to the email service and send account verification messages. |
 
 ###  Typical Flow: User Registration and Email Verification
 
-The exact path the data follows when a new member of the university community creates an account:
+The path the data follows when a new member of the university community creates an account:
 
 ```mermaid
 sequenceDiagram
     autonumber
     actor U as  Client / Browser
-    participant C as  MVC Controller
+    participant C as  Router / MVC Controller
+    participant I as  ASP.NET Core Identity
+    participant S as  OtpService
+    participant R as  OtpRepository
     participant DB as  Database (SQL)
+    participant M as  SMTP Email
 
     U->>C: Fills in and submits the form<br/>(Data + Anti-Forgery Token)
-    Note over C: Validates data and role<br/>Hashes password with BCrypt<br/>Generates verification code (OTP)
-    C->>DB: Saves user (Inactive)
-    C-->>U: Sends SMTP email with the verification code
+    Note over C: Validates registration data and role
+    C->>I: Creates user and assigns role
+    I->>DB: Saves user (Inactive)
+    C->>S: Requests verification code
+    Note over S: Generates code and applies OTP rules
+    S->>R: Persists OTP state
+    R->>DB: Updates OTP state
+    S->>M: Sends verification code
+    C-->>U: Redirects to email verification
 
     rect rgb(235, 245, 255)
     Note over U,DB: ✉️ The user receives the code and enters it on the platform
     U->>C: Enters the verification code
-    Note over C: Compares received code<br/>Changes status to "Active"
-    C->>DB: Updates record
+    C->>S: Requests code verification
+    Note over S: Compares received code<br/>Changes status to "Active"
+    S->>R: Persists verification state
+    R->>DB: Updates record
     C-->>U: Redirects to Login screen
     end
 ```
@@ -245,7 +263,7 @@ sequenceDiagram
 ###  Step by step
 
 1. **Data submission:** the user enters their data (name, institutional email, role) and clicks *Register*. The form travels over HTTPS POST, including a security token against CSRF attacks.
-2. **Processing and hashing:** the Controller validates the fields and uses `BCrypt.Net-Next` to hash the password. It also generates a one-time verification code (OTP) to validate the email.
+2. **Processing and hashing:** the Controller validates the fields and ASP.NET Core Identity hashes the password. The OTP service generates a one-time verification code to validate the email.
 3. **Initial persistence:** through Entity Framework Core 8, the system inserts the record into SQL Server with `EmailConfirmed = false`.
 4. **Email dispatch:** the backend uses SMTP to automatically send an email to the user's institutional address with the generated verification code.
 5. **Account activation:** the user checks their inbox and enters the code on the verification screen. The browser sends a new request to the controller, which looks up the code in the database, validates that it matches, sets the status to `EmailConfirmed = true`, and redirects the user to the login screen.
@@ -311,7 +329,7 @@ For the current phase, the system works with a relational schema centered on the
 | `Id` | `int` / `Guid` | `INT IDENTITY` / `UNIQUEIDENTIFIER` |  Primary Key | Unique identifier and primary key of the record. |
 | `Email` | `string` | `NVARCHAR(256)` | `Required`, `EmailAddress`, Unique Index | Institutional email address. Duplicates are not allowed. |
 | `CaseNumber` | `string` | `NVARCHAR(50)` | `Required`, Unique Index | Unique case number, student ID, or university registration number. |
-| `PasswordHash` | `string` | `NVARCHAR(MAX)` | `Required` | Password hashed with the BCrypt algorithm. |
+| `PasswordHash` | `string` | `NVARCHAR(MAX)` | `Required` | Password hash managed by ASP.NET Core Identity; legacy BCrypt hashes are upgraded after successful login. |
 | `Role` | `string` / `enum` | `NVARCHAR(20)` | `Required` | Role for access control (`Student`, `Teacher`, `Admin`, `Staff`). |
 | `EmailConfirmed` | `bool` | `BIT` | Default: `false` | Email verification status (activated through an OTP code sent by email). |
 
@@ -337,7 +355,7 @@ erDiagram
         int Id PK "INT IDENTITY · Auto-incrementing unique identifier"
         nvarchar Email UK "NVARCHAR(256) · Institutional email (unique index)"
         nvarchar CaseNumber UK "NVARCHAR(50) · Student ID or registration number (unique index)"
-        nvarchar PasswordHash "NVARCHAR(MAX) · Password hashed with BCrypt"
+        nvarchar PasswordHash "NVARCHAR(MAX) · Managed by ASP.NET Core Identity"
         nvarchar Role "NVARCHAR(20) · Admin, Teacher, Student, Staff"
         bit EmailConfirmed "Default false · Email verified"
     }

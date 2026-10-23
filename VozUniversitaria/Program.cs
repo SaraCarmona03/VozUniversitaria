@@ -2,6 +2,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using VozUniversitaria.Data;
 using VozUniversitaria.Models;
+using VozUniversitaria.Repositories;
 using VozUniversitaria.Services;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -12,7 +13,7 @@ builder.Services.AddControllersWithViews();
 
 //////// A database connection is added.
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));  
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 builder.Services
     .AddIdentity<Users, IdentityRole<int>>(options =>
@@ -40,6 +41,7 @@ builder.Services.AddScoped<IPasswordHasher<Users>, LegacyBcryptPasswordHasher>()
 builder.Services.AddScoped<IUserClaimsPrincipalFactory<Users>, UsersClaimsPrincipalFactory>();
 
 builder.Services.AddScoped<IEmailSender, SmtpEmailSender>();
+builder.Services.AddScoped<IOtpRepository, OtpRepository>();
 builder.Services.AddScoped<OtpService>();
 
 var app = builder.Build();
