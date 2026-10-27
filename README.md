@@ -1,6 +1,6 @@
 # VozUniversitaria
 
-VozUniversitaria is a web application developed with ASP.NET Core MVC on .NET 8. The project follows a clean MVC structure and uses the default ASP.NET Core web template with Razor views, Bootstrap styling, and modern server-side rendering practices.
+VozUniversitaria is an ASP.NET Core MVC application on .NET 8 with a staged React/API pilot. The existing Razor interface remains active while the separate React client exercises the new API.
 
 ## Overview
 
@@ -28,6 +28,8 @@ Framework Core.
 ## Features
 
 - ASP.NET Core MVC architecture
+- ASP.NET Core JSON API for cookie-based sign-in, session status, OTP verification, and role checks
+- Separate React/Vite pilot client; existing MVC pages remain available
 - Razor-based view rendering
 - Bootstrap-powered responsive layout
 - Static assets served from `wwwroot`
@@ -260,15 +262,77 @@ features are not implemented yet:
 - courses and enrollments
 - announcements and internal messages
 - content management CRUD
-- API layer
+- Additional API endpoints beyond login, session, and email verification
 - external service integrations
 - admin dashboard
+
+### React login, registration, and same-origin API
+
+The React app provides the login and registration screens and is served by ASP.NET Core from
+`VozUniversitaria/wwwroot/app`. `GET /Account/Register` opens the React registration route;
+the existing MVC registration view and POST action remain available. The backend continues
+using the current Identity setup, `AppDbContext`, SQL Server database, models, and migrations;
+no database schema change is needed.
+
+Start the application from the repository root (configure the existing SQL Server and email
+settings first):
+
+```bash
+dotnet run --project VozUniversitaria/VozUniversitaria.csproj
+```
+
+MSBuild builds the React app during `dotnet run`; it runs `npm ci` automatically if frontend
+dependencies are not present. The compiled files are written to `VozUniversitaria/wwwroot/app`.
+The frontend calls `/api/...` on the same origin and uses Identity cookies plus the
+antiforgery request token in `X-CSRF-TOKEN` for state-changing requests.
+
+The development CORS policy for `http://localhost:5173` is retained for optional standalone
+Vite development. It is not needed when React and the API are served from ASP.NET Core.
+
+The login redirects authenticated users to `/Home/Index`, the same destination used by the
+MVC login action. React registration creates Student accounts using the same domain, Identity,
+role, and OTP registration service as MVC. Password recovery does not yet have an MVC action
+or API flow.
+
+Initial API routes:
+
+| Route | Purpose |
+| --- | --- |
+| `GET /api/security/csrf` | Issue the antiforgery request token |
+| `GET /api/session` | Return the current authentication state and role names |
+| `POST /api/auth/login` | Sign in using the existing Identity cookie |
+| `POST /api/auth/register` | Register a Student account and send its verification OTP |
+| `POST /api/auth/logout` | End the current Identity session |
+| `POST /api/auth/verification/resend` | Request an OTP through the existing OTP service |
+| `POST /api/auth/verification/verify` | Verify an OTP through the existing OTP service |
+| `GET /api/admin/access` | Example endpoint protected by the `Admin` role |
+
+Do not remove the MVC views as part of this pilot. Move an individual flow only after its
+React/API equivalent and its authentication, authorization, and validation behavior have been
+tested.
 
 The planned data model and future entities are documented in `architecture.md`.
 
 ## Contribution Guidelines
 
 Contributions are welcome. To keep the project consistent and maintainable, please follow these guidelines:
+
+### Run local continuous integration
+
+On Linux, macOS, or WSL, run the local CI script from the repository root:
+
+```bash
+bash scripts/ci-local.sh
+```
+
+The script checks for Node.js, npm, and the .NET SDK; installs the locked frontend
+dependencies with `npm ci`; builds React into `VozUniversitaria/wwwroot/app`; builds the
+backend and test project; and runs the automated test suite. It stops and returns a
+non-zero exit code on the first failure. No SQL Server, SMTP service, or external CI provider
+is needed for the automated tests.
+
+GitHub Actions runs the same script automatically on every push, pull request, and manual
+workflow dispatch. Its configuration is in `.github/workflows/ci.yml`.
 
 1. Create a feature branch before making changes:
 
