@@ -5,6 +5,8 @@ obj/
 *.dll
 *.pdb
 node_modules/
+**/dist/
+/VozUniversitaria/wwwroot/app/
 .env
 dotnet/
 .DS_Store

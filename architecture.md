@@ -89,15 +89,20 @@ In the current phase, the project focuses on building a **solid foundation of se
 
 ## 4. Structure and Architectural Pattern
 
-###  Chosen pattern: Monolithic Model-View-Controller (MVC)
+###  Current pattern: MVC with a staged API/React pilot
 
-The application adopts a **Modular Monolith** architecture based on the native MVC design pattern of ASP.NET Core. All components (business logic, database, and interface) are unified in a single deployable project.
+The existing application remains an ASP.NET Core **Modular Monolith**: MVC routes and Razor
+views continue to serve the current registration, login, and verification flows. A separate
+React client is being introduced alongside it and calls JSON endpoints hosted by the same
+ASP.NET Core backend. This is a gradual client/API transition, not a microservices migration.
+Identity, services, repositories, EF Core, SQL Server, models, and the existing schema remain
+in place.
 
 ###  Justification versus other alternatives
 
 - **Development speed versus microservices:** a microservices system would add unnecessary complexity (networking, multiple databases, communication APIs) for the current phase. The monolith allows registration and login to be developed right away.
-- **Efficient coupling with Razor:** with Razor Views, the View and the Controller live in the same server ecosystem. This removes the need for a decoupled backend (such as a separate Web API with a React frontend), reducing data transfer time and simplifying deployment.
-- **Separation of concerns:** although it is a monolith, HTTP endpoints (MVC controllers in `Routers`) handle requests, `Services` apply application rules, and `Repositories` persist data through `Data` and Entity Framework Core. **Views** render the interface.
+- **Gradual decoupling:** React and API endpoints can be delivered feature by feature while unconverted views keep working. The API reuses Identity and the existing OTP service; it does not require a database redesign.
+- **Separation of concerns:** MVC controllers continue rendering pages, API controllers return JSON, `Services` apply application rules, and `Repositories` persist data through `Data` and Entity Framework Core.
 
 ###  Architecture Diagram
 
@@ -105,12 +110,12 @@ Flow of data and components within the architecture using .NET 8 and Dev Contain
 
 ```mermaid
 flowchart TD
-    A[" <b>Client: Web Browser</b><br/>HTML5 · Bootstrap 5 · JavaScript"]
+    A[" <b>Browser: Existing MVC and React clients</b><br/>Razor · HTML · React"]
 
     subgraph DC[" Environment: VS Code Dev Container"]
         subgraph S[" Application Server: ASP.NET Core Monolith"]
             V[" <b>Razor Views</b><br/>Server-side interface rendering"]
-            C[" <b>Routers / MVC Controllers</b><br/>HTTP requests and views"]
+            C[" <b>MVC and API Controllers</b><br/>HTML routes and JSON endpoints"]
             SVC[" <b>Services</b><br/>Application and business logic"]
             R[" <b>Repositories</b><br/>Persistence operations"]
             B[" <b>Security</b><br/>ASP.NET Core Identity<br/>Legacy BCrypt migration"]
@@ -120,7 +125,7 @@ flowchart TD
 
     DB[(" <b>SQL Server Relational</b><br/>Tables: Users · Roles · Verifications")]
 
-    A -- "HTTPS requests<br/>(Login / Registration / Forms)" --> S
+    A -- "MVC requests and JSON API<br/>(Identity cookie + antiforgery token)" --> S
     S --- V
     S --- C
     C --> SVC
