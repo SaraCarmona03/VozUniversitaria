@@ -22,4 +22,14 @@
     </PackageReference>
   </ItemGroup>
 
+  <Target Name="BuildReactFrontend" BeforeTargets="PrepareForBuild"
+          Condition="'$(DesignTimeBuild)' != 'true' and '$(SkipReactFrontendBuild)' != 'true'">
+    <PropertyGroup>
+      <FrontendDirectory>$(MSBuildProjectDirectory)/../frontend</FrontendDirectory>
+    </PropertyGroup>
+    <Error Condition="!Exists('$(FrontendDirectory)/package.json')" Text="The React frontend package.json was not found at $(FrontendDirectory)." />
+    <Exec Command="npm ci" WorkingDirectory="$(FrontendDirectory)" Condition="!Exists('$(FrontendDirectory)/node_modules')" />
+    <Exec Command="npm run build" WorkingDirectory="$(FrontendDirectory)" />
+  </Target>
+
 </Project>
