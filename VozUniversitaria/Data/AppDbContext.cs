@@ -3,7 +3,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using VozUniversitaria.Models;
-
 namespace VozUniversitaria.Data
 {
     public class AppDbContext : IdentityDbContext<Users, IdentityRole<int>, int>

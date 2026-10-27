@@ -14,7 +14,7 @@ namespace VozUniversitaria.Routers
         private readonly SignInManager<Users> _signInManager;
         private readonly RoleManager<IdentityRole<int>> _roleManager;
         private readonly OtpService _otp;
-        private readonly string[] _allowedDomains;
+        private readonly AccountRegistrationService _registration;
 
         /// <summary>Recibe los servicios de Identity, OTP y los dominios
         /// de correo permitidos.</summary>
@@ -23,14 +23,13 @@ namespace VozUniversitaria.Routers
             SignInManager<Users> signInManager,
             RoleManager<IdentityRole<int>> roleManager,
             OtpService otp,
-            IConfiguration config)
+            AccountRegistrationService registration)
         {
             _userManager = userManager;
             _signInManager = signInManager;
             _roleManager = roleManager;
             _otp = otp;
-            _allowedDomains = config.GetSection("AllowedEmailDomains").Get<string[]>()
-                              ?? Array.Empty<string>();
+            _registration = registration;
         }
 
         /// <summary>Muestra los roles que pueden elegir los usuarios
@@ -45,14 +44,7 @@ namespace VozUniversitaria.Routers
         [HttpGet]
         public IActionResult Register(UserRole role)
         {
-            if (!IsPublicRegistrationRole(role))
-            {
-                TempData["Error"] = "That role cannot be selected during public registration.";
-                return RedirectToAction(nameof(SelectRole));
-            }
-
-            ViewData["Role"] = role;
-            return View();
+            return Redirect("/app/index.html#registro");
         }
 
         /// <summary>Valida los datos, crea la cuenta y solicita el envío
@@ -67,69 +59,37 @@ namespace VozUniversitaria.Routers
                 return View(model);
             }
 
-            var email = model.Email.Trim().ToLowerInvariant();
-
-            // Solo se aceptan cuentas de los dominios institucionales configurados.
-            if (!IsAllowedDomain(email))
+            var result = await _registration.RegisterAsync(model);
+            if (result.Status == AccountRegistrationStatus.EmailAlreadyRegisteredUnverified)
             {
-                var domains = string.Join(", ", _allowedDomains.Select(d => "@" + d.TrimStart('@')));
-                ModelState.AddModelError("Email", $"Use your institutional email ({domains}).");
-                return View(model);
+                TempData["Info"] = "This email is registered but not verified yet. Enter the code we sent you, or request a new one.";
+                return RedirectToAction("VerifyEmail", new { email = result.Email });
             }
 
-            if (!IsPublicRegistrationRole(model.Role))
+            if (result.Status == AccountRegistrationStatus.Created)
             {
-                ModelState.AddModelError(nameof(model.Role), "Select a role available for public registration.");
-                return View(model);
+                SetOtpStatusMessage(result.OtpSendResult
+                    ?? throw new InvalidOperationException("The registration result did not include the OTP status."),
+                    result.Email);
+                return RedirectToAction("VerifyEmail", new { email = result.Email });
             }
 
-            var existingUser = await _userManager.FindByEmailAsync(email);
-            if (existingUser != null)
+            if (result.Status == AccountRegistrationStatus.EmailAlreadyRegistered)
             {
-                if (!existingUser.IsEmailVerified)
-                {
-                    TempData["Info"] = "This email is registered but not verified yet. Enter the code we sent you, or request a new one.";
-                    return RedirectToAction("VerifyEmail", new { email });
-                }
-
                 ModelState.AddModelError("Email", "This email is already registered.");
-                return View(model);
+            }
+            else if (result.Errors is not null)
+            {
+                foreach (var (field, errors) in result.Errors)
+                {
+                    foreach (var error in errors)
+                    {
+                        ModelState.AddModelError(field, error);
+                    }
+                }
             }
 
-            if (!await EnsureRoleExistsAsync(model.Role.ToString()))
-            {
-                ModelState.AddModelError(string.Empty, "The selected role could not be configured. Please try again.");
-                return View(model);
-            }
-
-            var newUser = new Users
-            {
-                Name = model.Name,
-                LastName = model.LastName,
-                CaseNumber = model.CaseNumber,
-                UserName = email,
-                Email = email,
-                LockoutEnabled = true,
-                Role = model.Role
-            };
-
-            var createResult = await _userManager.CreateAsync(newUser, model.Password);
-            if (!createResult.Succeeded)
-            {
-                AddIdentityErrors(createResult);
-                return View(model);
-            }
-
-            var roleResult = await _userManager.AddToRoleAsync(newUser, model.Role.ToString());
-            if (!roleResult.Succeeded)
-            {
-                AddIdentityErrors(roleResult);
-                return View(model);
-            }
-
-            SetOtpStatusMessage(await _otp.SendAsync(newUser), email);
-
-            return RedirectToAction("VerifyEmail", new { email });
+            return View(model);
         }
 
         /// <summary>Muestra el formulario de verificación para el correo
@@ -191,7 +151,7 @@ namespace VozUniversitaria.Routers
         [HttpGet]
         public IActionResult Login()
         {
-            return View();
+            return Redirect("/app/index.html");
         }
 
         /// <summary>Valida las credenciales y crea la sesión si la cuenta
@@ -321,23 +281,5 @@ namespace VozUniversitaria.Routers
             TempData[key] = message;
         }
 
-        // El registro público no debe permitir que se seleccione el rol de administrador.
-        private static bool IsPublicRegistrationRole(UserRole role) =>
-            role is UserRole.Student or UserRole.Teacher or UserRole.Staff;
-
-        // Acepta el dominio institucional configurado y sus subdominios.
-        private bool IsAllowedDomain(string email)
-        {
-            var at = email.LastIndexOf('@');
-            if (at < 0) return false;
-
-            var domain = email[(at + 1)..];
-            return _allowedDomains.Any(d =>
-            {
-                var allowed = d.TrimStart('@');
-                return domain.Equals(allowed, StringComparison.OrdinalIgnoreCase)
-                    || domain.EndsWith("." + allowed, StringComparison.OrdinalIgnoreCase);
-            });
-        }
     }
 }
