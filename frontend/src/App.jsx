@@ -6,6 +6,17 @@ import NoticiasView from "./components/NoticiasView.jsx";
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "")
   .replace(/\/$/, "");
 
+function viewFromHash() {
+  switch (window.location.hash.toLowerCase()) {
+    case "#registro":
+      return "register";
+    case "#noticias":
+      return "noticias";
+    default:
+      return "login";
+  }
+}
+
 async function request(path, options = {}) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
     credentials: "include",
@@ -42,9 +53,7 @@ async function getCsrfToken() {
 export default function App() {
   const [session, setSession] = useState(null);
   const [csrfToken, setCsrfToken] = useState("");
-  const [view, setView] = useState(
-    window.location.hash === "#registro" ? "register" : "login",
-  );
+  const [view, setView] = useState(viewFromHash);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -55,7 +64,7 @@ export default function App() {
 
   useEffect(() => {
     const syncViewWithHash = () => {
-      setView(window.location.hash === "#registro" ? "register" : "login");
+      setView(viewFromHash());
     };
     window.addEventListener("hashchange", syncViewWithHash);
     return () => window.removeEventListener("hashchange", syncViewWithHash);
@@ -83,11 +92,15 @@ export default function App() {
     setView(nextView);
     setError("");
     setMessage("");
-    const hash = nextView === "register" ? "#registro" : "";
+    const hashByView = {
+      login: "",
+      register: "#registro",
+      noticias: "#noticias",
+    };
     window.history.replaceState(
       null,
       "",
-      `${window.location.pathname}${window.location.search}${hash}`,
+      `${window.location.pathname}${window.location.search}${hashByView[nextView]}`,
     );
   }
 
@@ -197,8 +210,8 @@ export default function App() {
   }
 
 
-if (view === "noticias") {
-    return <NoticiasView onBack={() => setView("login")} />;
+  if (view === "noticias") {
+    return <NoticiasView onBack={() => navigateTo("login")} />;
   }
 
 
@@ -315,7 +328,7 @@ if (view === "noticias") {
             href="#noticias"
             onClick={(event) => {
               event.preventDefault();
-              setView("noticias");
+              navigateTo("noticias");
             }}
           >
             → Ver Módulo de Noticias (EC2)

@@ -5,6 +5,7 @@ export const NoticiasList = () => {
   // Selector específico: solo leemos lo que necesita este componente
   const items = useNoticiasStore((state) => state.items);
   const isLoading = useNoticiasStore((state) => state.isLoading);
+  const error = useNoticiasStore((state) => state.error);
   const fetchItems = useNoticiasStore((state) => state.fetchItems);
 
   useEffect(() => {
@@ -12,6 +13,14 @@ export const NoticiasList = () => {
   }, [fetchItems]);
 
   if (isLoading) return <p>Cargando noticias...</p>;
+  if (error) {
+    return (
+      <div role="alert">
+        <p>No se pudieron cargar las noticias: {error}</p>
+        <button onClick={fetchItems}>Reintentar</button>
+      </div>
+    );
+  }
 
   return (
     <div>

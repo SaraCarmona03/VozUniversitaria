@@ -5,24 +5,25 @@ export const useNoticiasStore = create((set, get) => ({
   items: [],
   isLoading: false,
   hasFetched: false, // Mecanismo de control (guard) para evitar múltiples peticiones
+  error: null,
 
-  // Acción que realiza el fetch
   fetchItems: async () => {
-    if (get().hasFetched) return; // Guard para evitar la segunda petición
+    if (get().hasFetched || get().isLoading) return;
 
-    set({ isLoading: true });
+    set({ isLoading: true, error: null });
     try {
       const data = await getNoticias();
-      set({ items: data, hasFetched: true, isLoading: false });
+      set({ items: data, hasFetched: true, isLoading: false, error: null });
     } catch (error) {
       console.error("Error al obtener datos:", error);
-      set({ isLoading: false });
+      set({
+        isLoading: false,
+        error: error instanceof Error ? error.message : "No se pudieron cargar las noticias.",
+      });
     }
   },
 
-  // Función set para actualizar/mutar de forma inmutable
   setItems: (items) => set({ items }),
 
-  // Método temporal para la prueba de fallo (mutación)
   addItemTemp: (item) => set((state) => ({ items: [...state.items, item] })),
 }));
