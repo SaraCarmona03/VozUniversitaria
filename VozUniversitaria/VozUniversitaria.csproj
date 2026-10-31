@@ -29,7 +29,7 @@
     </PropertyGroup>
     <Error Condition="!Exists('$(FrontendDirectory)/package.json')" Text="The React frontend package.json was not found at $(FrontendDirectory)." />
     <Exec Command="npm ci" WorkingDirectory="$(FrontendDirectory)" Condition="!Exists('$(FrontendDirectory)/node_modules')" />
-    <Exec Command="npm run build" WorkingDirectory="$(FrontendDirectory)" />
+    <!--<Exec Command="npm run build" WorkingDirectory="..\frontend" />-->
   </Target>
 
 </Project>

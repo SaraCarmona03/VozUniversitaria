@@ -1,9 +1,21 @@
 import { useEffect, useState } from "react";
 import Home from "./components/Home.jsx";
 import Register from "./components/Register.jsx";
+import NoticiasView from "./components/NoticiasView.jsx";
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "")
   .replace(/\/$/, "");
+
+function viewFromHash() {
+  switch (window.location.hash.toLowerCase()) {
+    case "#registro":
+      return "register";
+    case "#noticias":
+      return "noticias";
+    default:
+      return "login";
+  }
+}
 
 async function request(path, options = {}) {
   const response = await fetch(`${apiBaseUrl}${path}`, {
@@ -41,9 +53,7 @@ async function getCsrfToken() {
 export default function App() {
   const [session, setSession] = useState(null);
   const [csrfToken, setCsrfToken] = useState("");
-  const [view, setView] = useState(
-    window.location.hash === "#registro" ? "register" : "login",
-  );
+  const [view, setView] = useState(viewFromHash);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [code, setCode] = useState("");
@@ -54,7 +64,7 @@ export default function App() {
 
   useEffect(() => {
     const syncViewWithHash = () => {
-      setView(window.location.hash === "#registro" ? "register" : "login");
+      setView(viewFromHash());
     };
     window.addEventListener("hashchange", syncViewWithHash);
     return () => window.removeEventListener("hashchange", syncViewWithHash);
@@ -82,11 +92,15 @@ export default function App() {
     setView(nextView);
     setError("");
     setMessage("");
-    const hash = nextView === "register" ? "#registro" : "";
+    const hashByView = {
+      login: "",
+      register: "#registro",
+      noticias: "#noticias",
+    };
     window.history.replaceState(
       null,
       "",
-      `${window.location.pathname}${window.location.search}${hash}`,
+      `${window.location.pathname}${window.location.search}${hashByView[nextView]}`,
     );
   }
 
@@ -195,6 +209,14 @@ export default function App() {
     }
   }
 
+
+  if (view === "noticias") {
+    return <NoticiasView onBack={() => navigateTo("login")} />;
+  }
+
+
+
+
   if (session?.authenticated) {
     return (
       <Home
@@ -299,6 +321,21 @@ export default function App() {
             Crear cuenta
           </a>
         </p>
+
+         {/* Enlace para ver tu actividad de noticias sin tocar tu login */}
+        <p className="account-links" style={{ marginTop: "15px" }}>
+          <a
+            href="#noticias"
+            onClick={(event) => {
+              event.preventDefault();
+              navigateTo("noticias");
+            }}
+          >
+            → Ver Módulo de Noticias (EC2)
+          </a>
+        </p>
+
+
         <p className="recovery-note">La recuperación de contraseña aún no está disponible.</p>
         <p className="footnote">Registro y demás pantallas siguen disponibles en MVC.</p>
       </section>
