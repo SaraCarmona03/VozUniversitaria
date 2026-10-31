@@ -141,7 +141,7 @@ export default function App() {
         headers: { "X-CSRF-TOKEN": csrfToken },
         body: JSON.stringify({ email, password }),
       });
-      setSession(await request("/api/session"));
+      await refreshSession();
     } catch (requestError) {
       if (requestError.details?.requiresEmailVerification) {
         setVerificationEmail(requestError.details.email);
@@ -224,6 +224,7 @@ export default function App() {
         onLogout={handleLogout}
         isLoggingOut={busy}
         error={error}
+        csrfToken={csrfToken}
       />
     );
   }

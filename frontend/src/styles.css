@@ -20,7 +20,9 @@ body {
 }
 
 button,
-input {
+input,
+select,
+textarea {
   font: inherit;
 }
 
@@ -372,6 +374,7 @@ button.secondary {
 }
 
 .post-card {
+  position: relative;
   display: flex;
   min-height: 12.5rem;
   flex-direction: column;
@@ -462,12 +465,153 @@ button.secondary {
   background: #3a2506;
 }
 
+.post-management {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.4rem;
+  margin-top: 0.8rem;
+  padding-top: 0.65rem;
+  border-top: 1px solid #1f2937;
+}
+
+.post-action {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  place-items: center;
+  padding: 0.4rem;
+  border: 1px solid #344258;
+  border-radius: 0.5rem;
+  color: #cbd5e1;
+  background: #1f2937;
+}
+
+.post-action:hover {
+  border-color: #64748b;
+  background: #29364a;
+}
+
+.post-action svg {
+  width: 1rem;
+  height: 1rem;
+  fill: none;
+  stroke: currentColor;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-width: 1.7;
+}
+
+.post-action.delete-action {
+  color: #fca5a5;
+}
+
+.post-action.delete-action:hover,
+.danger-button {
+  border-color: #991b1b;
+  color: #fee2e2;
+  background: #7f1d1d;
+}
+
+.confirmation-modal h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.3rem;
+}
+
+.confirmation-modal > p:not(.eyebrow, .notice) {
+  margin: 0.9rem 0 1.4rem;
+  color: #aab6c8;
+  line-height: 1.5;
+}
+
 .empty-feed {
   padding: 2rem 1rem;
   border: 1px dashed #344258;
   border-radius: 0.75rem;
   color: #9ca3af;
   text-align: center;
+}
+
+.publication-modal {
+  width: min(100%, 34rem);
+  padding: clamp(1.25rem, 4vw, 2rem);
+  border: 1px solid #29364a;
+  border-radius: 1rem;
+  background: #111827;
+  box-shadow: 0 1.5rem 5rem rgb(0 0 0 / 45%);
+}
+
+.modal-backdrop {
+  position: fixed;
+  z-index: 10;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  padding: 1rem;
+  background: rgb(3 7 18 / 78%);
+}
+
+.modal-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.modal-heading .eyebrow {
+  margin: 0 0 0.4rem;
+}
+
+.modal-heading h2 {
+  margin: 0;
+  color: #fff;
+  font-size: 1.35rem;
+}
+
+.modal-close {
+  padding: 0.15rem 0.55rem;
+  color: #9ca3af;
+  background: transparent;
+  font-size: 1.7rem;
+  line-height: 1.2;
+}
+
+.publication-form {
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.publication-form input,
+.publication-form select,
+.publication-form textarea {
+  width: 100%;
+  padding: 0.8rem 0.9rem;
+  border: 1px solid #344258;
+  border-radius: 0.65rem;
+  outline: none;
+  color: #f8fafc;
+  background: #0d1524;
+  font: inherit;
+}
+
+.publication-form textarea {
+  resize: vertical;
+  line-height: 1.5;
+}
+
+.publication-form input:focus,
+.publication-form select:focus,
+.publication-form textarea:focus {
+  border-color: #818cf8;
+  box-shadow: 0 0 0 3px rgb(129 140 248 / 16%);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
 }
 
 .visually-hidden {

@@ -13,6 +13,7 @@ namespace VozUniversitaria.Data
 
         // Nuevo modelo para el perfil académico del alumno
         public DbSet<StudentProfile> StudentProfiles { get; set; }
+        public DbSet<Publication> Publications { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
         {
@@ -26,6 +27,15 @@ namespace VozUniversitaria.Data
                 .WithOne()
                 .HasForeignKey<StudentProfile>(profile => profile.UserId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            builder.Entity<Publication>()
+                .HasOne(publication => publication.Author)
+                .WithMany()
+                .HasForeignKey(publication => publication.AuthorId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            builder.Entity<Publication>()
+                .HasIndex(publication => publication.CreatedAt);
         }
     }
 }
