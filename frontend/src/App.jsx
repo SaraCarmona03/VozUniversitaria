@@ -1,42 +1,8 @@
 import { useEffect, useState } from "react";
 import Home from "./components/Home.jsx";
 import Register from "./components/Register.jsx";
-
-const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL || "")
-  .replace(/\/$/, "");
-
-async function request(path, options = {}) {
-  const response = await fetch(`${apiBaseUrl}${path}`, {
-    credentials: "include",
-    ...options,
-    headers: {
-      ...(options.body ? { "Content-Type": "application/json" } : {}),
-      ...options.headers,
-    },
-  });
-
-  if (response.status === 204) {
-    return null;
-  }
-
-  const contentType = response.headers.get("content-type") || "";
-  const body = contentType.includes("application/json")
-    ? await response.json()
-    : null;
-
-  if (!response.ok) {
-    const error = new Error(body?.error || body?.title || "No se pudo completar la solicitud.");
-    error.details = body;
-    throw error;
-  }
-
-  return body;
-}
-
-async function getCsrfToken() {
-  const result = await request("/api/security/csrf");
-  return result.requestToken;
-}
+import { request } from "./api/client.js";
+import { getCsrfToken } from "./api/auth.js";
 
 export default function App() {
   const [session, setSession] = useState(null);
