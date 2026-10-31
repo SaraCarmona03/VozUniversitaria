@@ -1,5 +1,6 @@
 import { useMemo, useState } from "react";
-import PostCard from "./PostCard.jsx";
+import SearchBar from "./SearchBar.jsx";
+import PostList from "./PostList.jsx";
 import mockPosts from "../data/mockPosts.js";
 
 const filters = [
@@ -64,16 +65,7 @@ export default function Home({ session, onLogout, isLoggingOut, error }) {
             <button className="new-post-button" type="button">+ Nueva publicación</button>
           </div>
 
-          <label className="search-label">
-            <span className="visually-hidden">Buscar publicaciones</span>
-            <input
-              className="post-search"
-              type="search"
-              placeholder="Buscar publicaciones"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-            />
-          </label>
+          <SearchBar value={search} onChange={setSearch} />
 
           <div className="post-filters" aria-label="Filtrar publicaciones por categoría">
             {filters.map((filter) => (
@@ -89,13 +81,7 @@ export default function Home({ session, onLogout, isLoggingOut, error }) {
             ))}
           </div>
 
-          {visiblePosts.length > 0 ? (
-            <div className="posts-grid">
-              {visiblePosts.map((post) => <PostCard key={post.id} post={post} />)}
-            </div>
-          ) : (
-            <p className="empty-feed">No hay publicaciones que coincidan con tu búsqueda.</p>
-          )}
+          <PostList posts={visiblePosts} />
         </section>
       </main>
     </div>
