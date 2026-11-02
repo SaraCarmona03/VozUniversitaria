@@ -1,7 +1,8 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import SearchBar from "./SearchBar.jsx";
 import PostList from "./PostList.jsx";
-import mockPosts from "../data/mockPosts.js";
+import PostsSummary from "./PostsSummary.jsx";
+import { usePostsStore } from "../store/postsStore.js";
 
 const filters = [
   { label: "All", value: "all", className: "filter-all" },
@@ -15,10 +16,22 @@ export default function Home({ session, onLogout, isLoggingOut, error }) {
   const [activeFilter, setActiveFilter] = useState("all");
   const [search, setSearch] = useState("");
 
+  const items = usePostsStore((s) => s.items);
+  const status = usePostsStore((s) => s.status);
+  const fetchPosts = usePostsStore((s) => s.fetchPosts);
+
+  useEffect(() => {
+    fetchPosts();
+  }, [fetchPosts]);
+
+  const cambiarStatus = () => {
+    usePostsStore.setState((s) => ({ status: s.status === "success" ? "loading" : "success" }));
+  };
+
   const visiblePosts = useMemo(() => {
     const query = search.trim().toLocaleLowerCase();
 
-    return mockPosts.filter((post) => {
+    return items.filter((post) => {
       const matchesCategory = activeFilter === "all" || post.categoryKey === activeFilter;
       const searchableText = [
         post.category,
@@ -34,7 +47,7 @@ export default function Home({ session, onLogout, isLoggingOut, error }) {
 
       return matchesCategory && (!query || searchableText.includes(query));
     });
-  }, [activeFilter, search]);
+  }, [items, activeFilter, search]);
 
   return (
     <div className="home-shell">
@@ -65,6 +78,8 @@ export default function Home({ session, onLogout, isLoggingOut, error }) {
             <button className="new-post-button" type="button">+ Nueva publicación</button>
           </div>
 
+          <PostsSummary />
+          <button type="button" onClick={cambiarStatus}>Cambiar status (temporal)</button>
           <SearchBar value={search} onChange={setSearch} />
 
           <div className="post-filters" aria-label="Filtrar publicaciones por categoría">
@@ -80,6 +95,11 @@ export default function Home({ session, onLogout, isLoggingOut, error }) {
               </button>
             ))}
           </div>
+
+          {status === "loading" && <p>Cargando publicaciones...</p>}
+          {status === "error" && (
+            <p className="notice failure" role="alert">No se pudieron cargar las publicaciones.</p>
+          )}
 
           <PostList posts={visiblePosts} />
         </section>
