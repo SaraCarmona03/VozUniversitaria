@@ -102,6 +102,113 @@ public class AuthApiTests
     }
 
     [Fact]
+    public async Task Publications_can_be_created_and_listed_only_by_authenticated_users()
+    {
+        await using var factory = new ApiApplicationFactory();
+        using var client = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = true
+        });
+
+        Assert.Equal(HttpStatusCode.Unauthorized,
+            (await client.GetAsync("/api/publications")).StatusCode);
+
+        await factory.SeedUserAsync("publisher@ues.mx", UserRole.Student, isVerified: true);
+        await factory.SeedUserAsync("other-publisher@ues.mx", UserRole.Student, isVerified: true);
+        var csrfToken = await GetCsrfTokenAsync(client);
+        var login = await PostWithCsrfAsync(client, "/api/auth/login", csrfToken,
+            new { email = "publisher@ues.mx", password = "Password123" });
+        Assert.Equal(HttpStatusCode.NoContent, login.StatusCode);
+
+        var staleCsrfToken = await PostWithCsrfAsync(client, "/api/publications", csrfToken, new
+        {
+            categoryKey = "event",
+            title = "Feria universitaria",
+            description = "Este viernes en el campus."
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, staleCsrfToken.StatusCode);
+
+        var withoutCsrf = await client.PostAsJsonAsync("/api/publications", new
+        {
+            categoryKey = "event",
+            title = "Feria universitaria",
+            description = "Este viernes en el campus."
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, withoutCsrf.StatusCode);
+
+        csrfToken = await GetCsrfTokenAsync(client);
+        var invalidCategory = await PostWithCsrfAsync(client, "/api/publications", csrfToken, new
+        {
+            categoryKey = "invalid",
+            title = "Publicación inválida",
+            description = "No debe guardarse."
+        });
+        Assert.Equal(HttpStatusCode.BadRequest, invalidCategory.StatusCode);
+
+        var create = await PostWithCsrfAsync(client, "/api/publications", csrfToken, new
+        {
+            categoryKey = "event",
+            title = " Feria universitaria ",
+            description = " Este viernes en el campus. "
+        });
+        Assert.Equal(HttpStatusCode.Created, create.StatusCode);
+        var createdPublication = await create.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Feria universitaria", createdPublication.GetProperty("title").GetString());
+        Assert.Equal("Test User", createdPublication.GetProperty("author").GetString());
+        var publicationId = createdPublication.GetProperty("id").GetInt32();
+
+        var list = await client.GetFromJsonAsync<JsonElement>("/api/publications");
+        var publication = Assert.Single(list.EnumerateArray());
+        Assert.Equal("event", publication.GetProperty("categoryKey").GetString());
+        Assert.Equal("Evento", publication.GetProperty("category").GetString());
+        Assert.Equal(publicationId, publication.GetProperty("id").GetInt32());
+
+        using var otherClient = factory.CreateClient(new WebApplicationFactoryClientOptions
+        {
+            AllowAutoRedirect = false,
+            HandleCookies = true
+        });
+        var otherCsrfToken = await GetCsrfTokenAsync(otherClient);
+        var otherLogin = await PostWithCsrfAsync(otherClient, "/api/auth/login", otherCsrfToken,
+            new { email = "other-publisher@ues.mx", password = "Password123" });
+        Assert.Equal(HttpStatusCode.NoContent, otherLogin.StatusCode);
+
+        otherCsrfToken = await GetCsrfTokenAsync(otherClient);
+        var foreignUpdate = await PutWithCsrfAsync(otherClient,
+            $"/api/publications/{publicationId}", otherCsrfToken, new
+            {
+                categoryKey = "event",
+                title = "Edición ajena",
+                description = "No debe permitirse."
+            });
+        Assert.Equal(HttpStatusCode.Forbidden, foreignUpdate.StatusCode);
+        var foreignDelete = await DeleteWithCsrfAsync(
+            otherClient, $"/api/publications/{publicationId}", otherCsrfToken);
+        Assert.Equal(HttpStatusCode.Forbidden, foreignDelete.StatusCode);
+
+        csrfToken = await GetCsrfTokenAsync(client);
+        var update = await PutWithCsrfAsync(client, $"/api/publications/{publicationId}", csrfToken,
+            new
+            {
+                categoryKey = "notice",
+                title = "Aviso actualizado",
+                description = "La fecha del evento cambió."
+            });
+        Assert.Equal(HttpStatusCode.OK, update.StatusCode);
+        var updatedPublication = await update.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Equal("Aviso actualizado", updatedPublication.GetProperty("title").GetString());
+        Assert.Equal("notice", updatedPublication.GetProperty("categoryKey").GetString());
+
+        csrfToken = await GetCsrfTokenAsync(client);
+        var delete = await DeleteWithCsrfAsync(
+            client, $"/api/publications/{publicationId}", csrfToken);
+        Assert.Equal(HttpStatusCode.NoContent, delete.StatusCode);
+        var emptyList = await client.GetFromJsonAsync<JsonElement>("/api/publications");
+        Assert.Empty(emptyList.EnumerateArray());
+    }
+
+    [Fact]
     public async Task State_changing_api_requests_require_an_antiforgery_token()
     {
         await using var factory = new ApiApplicationFactory();
@@ -201,6 +308,30 @@ public class AuthApiTests
         {
             Content = JsonContent.Create(body)
         };
+        request.Headers.Add("X-CSRF-TOKEN", csrfToken);
+        return client.SendAsync(request);
+    }
+
+    private static Task<HttpResponseMessage> PutWithCsrfAsync(
+        HttpClient client,
+        string path,
+        string csrfToken,
+        object body)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Put, path)
+        {
+            Content = JsonContent.Create(body)
+        };
+        request.Headers.Add("X-CSRF-TOKEN", csrfToken);
+        return client.SendAsync(request);
+    }
+
+    private static Task<HttpResponseMessage> DeleteWithCsrfAsync(
+        HttpClient client,
+        string path,
+        string csrfToken)
+    {
+        var request = new HttpRequestMessage(HttpMethod.Delete, path);
         request.Headers.Add("X-CSRF-TOKEN", csrfToken);
         return client.SendAsync(request);
     }

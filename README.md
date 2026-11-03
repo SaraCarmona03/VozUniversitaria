@@ -30,6 +30,7 @@ Framework Core.
 - ASP.NET Core MVC architecture
 - ASP.NET Core JSON API for cookie-based sign-in, session status, OTP verification, and role checks
 - Separate React/Vite pilot client; existing MVC pages remain available
+- Authenticated publication creation and feed backed by SQL Server
 - Razor-based view rendering
 - Bootstrap-powered responsive layout
 - Static assets served from `wwwroot`
@@ -48,6 +49,9 @@ Framework Core.
 ```text
 VozUniversitaria/
 ├── Routers/
+│   ├── Api/
+│   │   ├── AuthApiController.cs
+│   │   └── PublicationsApiController.cs
 │   ├── AccountController.cs
 │   └── HomeController.cs
 ├── Data/
@@ -61,6 +65,7 @@ VozUniversitaria/
 │   └── AppDbContextModelSnapshot.cs
 ├── Models/
 │   ├── ErrorViewModel.cs
+│   ├── Publication.cs
 │   ├── StudentProfile.cs
 │   └── Users.cs
 ├── Services/
@@ -254,15 +259,13 @@ To connect from VS Code (using the **SQL Server (mssql)** extension):
 
 ## Development Notes
 
-The current implementation focuses on authentication and the initial user data model.
-The student profile schema exists, but profile management flows and the following
-features are not implemented yet:
+The current implementation includes authentication, a student profile schema, and
+authenticated publication creation and listing. The following features are not implemented yet:
 
 - teacher profiles
 - courses and enrollments
 - announcements and internal messages
-- content management CRUD
-- Additional API endpoints beyond login, session, and email verification
+- publication editing and deletion
 - external service integrations
 - admin dashboard
 
@@ -306,6 +309,12 @@ Initial API routes:
 | `POST /api/auth/verification/resend` | Request an OTP through the existing OTP service |
 | `POST /api/auth/verification/verify` | Verify an OTP through the existing OTP service |
 | `GET /api/admin/access` | Example endpoint protected by the `Admin` role |
+| `GET /api/publications` | List publications in the authenticated feed |
+| `POST /api/publications` | Create a publication (requires authentication and antiforgery token) |
+
+Publications support the `complaint`, `suggestion`, `event`, and `notice` categories.
+Apply the `AddPublications` EF Core migration with the database update command above
+before using the publication feed.
 
 Do not remove the MVC views as part of this pilot. Move an individual flow only after its
 React/API equivalent and its authentication, authorization, and validation behavior have been
