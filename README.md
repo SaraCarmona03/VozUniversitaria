@@ -306,7 +306,7 @@ Initial API routes:
 | `POST /api/auth/login` | Sign in using the existing Identity cookie |
 | `POST /api/auth/register` | Register a Student account and send its verification OTP |
 | `POST /api/auth/logout` | End the current Identity session |
-| `POST /api/auth/verification/resend` | Request an OTP through the existing OTP service |
+| `POST /api/auth/verification/resend` | Request an OTP; reports send failures and resend cooldowns |
 | `POST /api/auth/verification/verify` | Verify an OTP through the existing OTP service |
 | `GET /api/admin/access` | Example endpoint protected by the `Admin` role |
 | `GET /api/publications` | List publications in the authenticated feed |
