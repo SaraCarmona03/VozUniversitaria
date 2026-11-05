@@ -216,15 +216,32 @@ public sealed class AuthApiController : ControllerBase
     public async Task<IActionResult> ResendVerification(ResendVerificationRequest request)
     {
         var user = await _userManager.FindByEmailAsync(request.Email.Trim().ToLowerInvariant());
-        if (user is not null && !user.IsEmailVerified)
+        if (user is null || user.IsEmailVerified)
         {
-            await _otp.SendAsync(user);
+            return Accepted(new
+            {
+                message = "Si la cuenta requiere verificación, se enviará un código cuando sea posible."
+            });
         }
 
-        return Accepted(new
+        var result = await _otp.SendAsync(user);
+        return result switch
         {
-            message = "Si la cuenta requiere verificación, se enviará un código cuando sea posible."
-        });
+            OtpSendResult.Sent => Accepted(new
+            {
+                message = "El código se envió al correo registrado. Revisa también la carpeta de spam."
+            }),
+            OtpSendResult.TooSoon => StatusCode(StatusCodes.Status429TooManyRequests, new
+            {
+                error = "Espera un minuto antes de solicitar otro código."
+            }),
+            OtpSendResult.Failed => StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                error = "No se pudo enviar el correo. Revisa la configuración SMTP y vuelve a intentarlo."
+            }),
+            _ => throw new ArgumentOutOfRangeException(nameof(result), result,
+                "Unknown OTP send result.")
+        };
     }
 
     [HttpPost("auth/verification/verify")]

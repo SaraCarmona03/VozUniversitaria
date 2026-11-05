@@ -69,6 +69,8 @@ public class AuthApiTests
         var resend = await PostWithCsrfAsync(client, "/api/auth/verification/resend", csrfToken,
             new { email = "pending@ues.mx" });
         Assert.Equal(HttpStatusCode.Accepted, resend.StatusCode);
+        var resendBody = await resend.Content.ReadFromJsonAsync<JsonElement>();
+        Assert.Contains("se envió", resendBody.GetProperty("message").GetString());
 
         var code = TestEmailSender.GetLastCode();
         var verify = await PostWithCsrfAsync(client, "/api/auth/verification/verify", csrfToken,
